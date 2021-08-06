@@ -439,7 +439,8 @@ def check_required_callbacks(keyfile_content):
     for line in keyfile_content:
         if line[0] in REQUIRED_CALLBACKS and line[3].upper() == "0XFFFFFFFF":
             print("Not all callbacks assigned.")
-            print("See README for needed callbacks in the keyfile."
+            print("See README for needed callbacks in the keyfile.")
+            input("Press ENTER to exit")
             sys.exit(1)
 
 def randomize_cockpit(keyfile_content):
@@ -466,11 +467,14 @@ def main():
     cockpit_randomized = 0
 
     while True:
-        in_3d = getIntellivibeData().In3D
-        on_ground = getIntellivibeData().IsOnGround
-        end_flight = getIntellivibeData().IsEndFlight
-        main_power = getFlightData().MainPower
-        cmds_mode = getFlightData2().cmdsMode
+        try:
+            in_3d = getIntellivibeData().In3D
+            on_ground = getIntellivibeData().IsOnGround
+            end_flight = getIntellivibeData().IsEndFlight
+            main_power = getFlightData().MainPower
+            cmds_mode = getFlightData2().cmdsMode
+        except:
+            continue
 
         if in_3d and on_ground and not main_power and not cockpit_randomized and cmds_mode == 1:
             randomize_cockpit(keyfile_content)
