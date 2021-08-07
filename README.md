@@ -28,7 +28,8 @@ to something in your keyfile. Check the falcon-bcc.py file and `REQUIRED_CALLBAC
 panel to STBY.
 
 It will only randomize the cockpit once. Subsequent toggling of the CMDS
-panel knob to STBY won't have any effect.
+panel knob to STBY won't have any effect. A sound effect is played
+during the randomizing for better feedback when it's done.
 
 ### Dependencies
 Just the Python standard library.

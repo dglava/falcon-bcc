@@ -375,35 +375,43 @@ def ReleaseKey(hexKeyCode):
 # end CC BY-SA 3.0 license--->
 
 def send_key(keycode, modifier):
+    # without a delay, it seems to fail when a bunch of modifiers are pressed
+    delay = 0.00000000001
     if modifier == "0":
         PressKey(keycode)
+        time.sleep(delay)
         ReleaseKey(keycode)
     elif modifier == "1":
         PressKey(0x2a)
         PressKey(keycode)
+        time.sleep(delay)
         ReleaseKey(keycode)
         ReleaseKey(0x2a)
     elif modifier == "2":
         PressKey(0x1d)
         PressKey(keycode)
+        time.sleep(delay)
         ReleaseKey(keycode)
         ReleaseKey(0x1d)
     elif modifier == "3":
         PressKey(0x1d)
         PressKey(0x2a)
         PressKey(keycode)
+        time.sleep(delay)
         ReleaseKey(keycode)
         ReleaseKey(0x2a)
         ReleaseKey(0x1d)
     elif modifier == "4":
         PressKey(0x38 + 2048)
         PressKey(keycode)
+        time.sleep(delay)
         ReleaseKey(keycode)
         ReleaseKey(0x38 + 2048)
     elif modifier == "5":
         PressKey(0x38 + 2048)
         PressKey(0x2a)
         PressKey(keycode)
+        time.sleep(delay)
         ReleaseKey(keycode)
         ReleaseKey(0x2a)
         ReleaseKey(0x38 + 2048)
@@ -411,6 +419,7 @@ def send_key(keycode, modifier):
         PressKey(0x1d)
         PressKey(0x38 + 2048)
         PressKey(keycode)
+        time.sleep(delay)
         ReleaseKey(keycode)
         ReleaseKey(0x38 + 2048)
         ReleaseKey(0x1d)
@@ -419,6 +428,7 @@ def send_key(keycode, modifier):
         PressKey(0x2a)
         PressKey(0x38 + 2048)
         PressKey(keycode)
+        time.sleep(delay)
         ReleaseKey(keycode)
         ReleaseKey(0x38 + 2048)
         ReleaseKey(0x2a)
@@ -461,8 +471,6 @@ def randomize_cockpit(keyfile_content):
 
 def toggle_callback(keyfile_line):
     send_key(int(keyfile_line[3], 16), keyfile_line[4])
-    # adds slight delay, had issues without it
-    time.sleep(0.01)
 
 def main():
     keyfile_content = get_keyfile_content(KEYFILE)
