@@ -24,8 +24,10 @@ import ctypes
 import ctypes.wintypes
 import time
 import random
+import winsound
 
 KEYFILE = "location of your keyfile"
+BEEP = "beep.wav"
 REFRESH_FREQUENCY = 2
 REQUIRED_CALLBACKS = [
     "SimProbeHeatOn", "SimProbeHeatOff", "SimProbeHeatTest",
@@ -444,20 +446,22 @@ def check_required_callbacks(keyfile_content):
             sys.exit(1)
 
 def randomize_cockpit(keyfile_content):
-	# randomizes the cockpit by simply triggering each callback a random
-	# number of times.
-	# switches and dials that can't be cycled (for example the air source)
+    # randomizes the cockpit by simply triggering each callback a random
+    # number of times.
+    # switches and dials that can't be cycled (for example the air source)
     # would always get set to the state that's placed last in the keyfile.
     # that's why the shuffle is needed to make them random as well.
+    winsound.PlaySound(BEEP, winsound.SND_LOOP | winsound.SND_ASYNC)
     random.shuffle(keyfile_content)
     for line in keyfile_content:
         if line[0] in REQUIRED_CALLBACKS:
             for rep in range(0, random.randint(1,6)):
                 toggle_callback(line)
+    winsound.PlaySound(None, winsound.SND_FILENAME)
 
 def toggle_callback(keyfile_line):
     send_key(int(keyfile_line[3], 16), keyfile_line[4])
-	# adds slight delay, had issues without it
+    # adds slight delay, had issues without it
     time.sleep(0.01)
 
 def main():
