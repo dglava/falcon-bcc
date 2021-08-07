@@ -468,6 +468,7 @@ def randomize_cockpit(keyfile_content):
             for rep in range(0, random.randint(1,6)):
                 toggle_callback(line)
     winsound.PlaySound(None, winsound.SND_FILENAME)
+    print("Randomized cockpit!")
 
 def toggle_callback(keyfile_line):
     send_key(int(keyfile_line[3], 16), keyfile_line[4])
@@ -478,6 +479,7 @@ def main():
 
     cockpit_randomized = 0
 
+    print("Waiting to randomize cockpit...")
     while True:
         try:
             in_3d = getIntellivibeData().In3D
