@@ -376,7 +376,7 @@ def ReleaseKey(hexKeyCode):
 
 def send_key(keycode, modifier):
     # without a delay, it seems to fail when a bunch of modifiers are pressed
-    delay = 0.00000000001
+    delay = 0.01
     if modifier == "0":
         PressKey(keycode)
         time.sleep(delay)
