@@ -25,9 +25,9 @@ import ctypes.wintypes
 import time
 import random
 import winsound
+import os.path
 
-KEYFILE = "location of your keyfile"
-BEEP = "beep.wav"
+KEYFILE = r"location of your keyfile"
 REFRESH_FREQUENCY = 2
 REQUIRED_CALLBACKS = [
     "SimProbeHeatOn", "SimProbeHeatOff", "SimProbeHeatTest",
@@ -96,6 +96,7 @@ REQUIRED_CALLBACKS = [
     "SimDLPower",
     "SimMAPPower"
 ]
+BEEP = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + "\beep.wav"
 
 # falcon bms shared memory reader; see https://github.com/nmeier/simscript
 # <--- start license: MIT License Copyright (c) 2021 Nils Meier
@@ -137,7 +138,6 @@ class FLIGHTDATA(ctypes.Structure):
         ("headPitch", ctypes.wintypes.FLOAT),
         ("headRoll", ctypes.wintypes.FLOAT),
         ("headYaw", ctypes.wintypes.FLOAT),
-
         ("lightBits2", ctypes.wintypes.INT),
         ("lightBits3", ctypes.wintypes.INT),
         ("ChaffCount", ctypes.wintypes.FLOAT),
@@ -199,15 +199,12 @@ class FLIGHTDATA2(ctypes.Structure):
         ("navMode", ctypes.wintypes.BYTE),
         ("AAUZ", ctypes.wintypes.FLOAT),
         ("tacanInfo", ctypes.wintypes.CHAR * 2),
-
         ("AltCalReading", ctypes.wintypes.INT),
         ("altBits", ctypes.wintypes.INT),
         ("powerBits", ctypes.wintypes.INT),
         ("blinkBits", ctypes.wintypes.INT),
-
         ("cmdsMode", ctypes.wintypes.INT),
         ("BupUhfPreset", ctypes.wintypes.INT),
-
         ("BupUhfFreq", ctypes.wintypes.INT),
         ("cabinAlt", ctypes.wintypes.FLOAT),
         ("hydPressureA", ctypes.wintypes.FLOAT),
@@ -215,34 +212,24 @@ class FLIGHTDATA2(ctypes.Structure):
         ("currentTime", ctypes.wintypes.INT),
         ("vehicleACD", ctypes.wintypes.SHORT),
         ("VersionNum", ctypes.wintypes.INT),
-
         ("fuelFlow2", ctypes.wintypes.FLOAT),
-
         ("RwrInfo", ctypes.wintypes.CHAR * 512),
         ("lefPos", ctypes.wintypes.FLOAT),
         ("tefPos", ctypes.wintypes.FLOAT),
-
         ("vtolPos", ctypes.wintypes.FLOAT),
-
         ("pilotsOnline", ctypes.wintypes.CHAR),
         ("pilotsCallsign", ctypes.wintypes.CHAR * 32 * 12),
         ("pilotsStatus", ctypes.wintypes.CHAR * 32),
-
         ("bumpIntensity", ctypes.wintypes.FLOAT),
-
         ("latitude", ctypes.wintypes.FLOAT),
         ("longitude", ctypes.wintypes.FLOAT),
-
         ("RTT_size", ctypes.wintypes.USHORT * 2),
         ("RTT_area", ctypes.wintypes.USHORT * 7 * 4),
-
         ("iffBackupMode1Digit1", ctypes.wintypes.CHAR),
         ("iffBackupMode1Digit2", ctypes.wintypes.CHAR),
         ("iffBackupMode3Digit1", ctypes.wintypes.CHAR),
         ("iffBackupMode3Digit2", ctypes.wintypes.CHAR),
-
         ("instrLight", ctypes.wintypes.CHAR),
-
         ("bettyBits", ctypes.wintypes.UINT),
         ("miscBits", ctypes.wintypes.UINT),
         ("RALT", ctypes.wintypes.FLOAT),
@@ -257,7 +244,6 @@ class FLIGHTDATA2(ctypes.Structure):
         ("StringAreaSize", ctypes.wintypes.UINT),
         ("StringAreaTime", ctypes.wintypes.UINT),
         ("DrawingAreaSize", ctypes.wintypes.UINT),
-
         ("turnRate", ctypes.wintypes.FLOAT),
 )
 
