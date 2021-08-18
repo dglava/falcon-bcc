@@ -96,7 +96,7 @@ REQUIRED_CALLBACKS = [
     "SimDLPower",
     "SimMAPPower"
 ]
-BEEP = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + "\beep.wav"
+BEEP = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + r"\beep.wav"
 
 # falcon bms shared memory reader; see https://github.com/nmeier/simscript
 # <--- start license: MIT License Copyright (c) 2021 Nils Meier
