@@ -426,7 +426,13 @@ def send_key(keycode, modifier):
 
 def get_keyfile_content(keyfile):
     keyfile_content = []
-    keyfile_file = open(keyfile, "r")
+    try:
+        keyfile_file = open(keyfile, "r")
+    except:
+        print("Keyfile not found. Check config"
+        input("Press ENTER to exit")
+        sys.exit(1)
+
     for line in keyfile_file:
         if line.startswith("#") or line.startswith("SimDoNothing"):
             continue
