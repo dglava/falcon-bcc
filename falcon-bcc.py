@@ -426,6 +426,7 @@ def send_key(keycode, modifier):
 
 def get_keyfile_content(keyfile):
     keyfile_content = []
+    assigned_callbacks = []
     try:
         keyfile_file = open(keyfile, "r")
     except:
@@ -439,17 +440,18 @@ def get_keyfile_content(keyfile):
         try:
             if line.split(" ")[3].upper() != "0XFFFFFFFF":
                 keyfile_content.append(line.strip().split(" ")[:8])
+                assigned_callbacks.append(line.strip().split(" ")[0])
         except IndexError:
             pass
-    return keyfile_content
+    return keyfile_content, assigned_callbacks
 
-def check_required_callbacks(keyfile_content):
-    for line in keyfile_content:
-        if line[0] in REQUIRED_CALLBACKS and line[3].upper() == "0XFFFFFFFF":
-            print("Not all callbacks assigned.")
-            print("See README for needed callbacks in the keyfile.")
-            input("Press ENTER to exit")
-            sys.exit(1)
+def check_required_callbacks(assigned_callbacks):
+    # check if every callback from REQUIRED_CALLBACKS is assigned in the keyfile
+    if not all(callback in assigned_callbacks for callback in REQUIRED_CALLBACKS):
+        print("Not all callbacks from the REQUIRED_CALLBACKS assigned in keyfile.")
+        print("Please edit your keyfile and assign keyboard keys to them.")
+        input("Press ENTER to exit")
+        sys.exit(1)
 
 def randomize_cockpit(keyfile_content):
     # randomizes the cockpit by simply triggering each callback a random
@@ -470,8 +472,8 @@ def toggle_callback(keyfile_line):
     send_key(int(keyfile_line[3], 16), keyfile_line[4])
 
 def main():
-    keyfile_content = get_keyfile_content(KEYFILE)
-    check_required_callbacks(keyfile_content)
+    keyfile_content, assigned_callbacks = get_keyfile_content(KEYFILE)
+    check_required_callbacks(assigned_callbacks)
 
     cockpit_randomized = 0
 
