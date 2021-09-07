@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# falcon-bcc
+# Falcon-BCC
 # Copyright 2021 Dino Duratović
 
 # This program is free software: you can redistribute it and/or modify
@@ -27,8 +27,7 @@ import random
 import winsound
 import os.path
 
-KEYFILE = r"location of your keyfile"
-REFRESH_FREQUENCY = 2
+KEYFILE = r"C:\Falcon BMS\User\Config\your.key"
 REQUIRED_CALLBACKS = [
     "SimProbeHeatOn", "SimProbeHeatOff", "SimProbeHeatTest",
     "SimFuelPumpOff", "SimFuelPumpNorm", "SimFuelPumpAft", "SimFuelPumpFwd",
@@ -40,13 +39,14 @@ REQUIRED_CALLBACKS = [
     "SimRALTSTDBY", "SimRALTON", "SimRALTOFF",
     "SimAirSourceOff", "SimAirSourceNorm", "SimAirSourceDump", "SimAirSourceRam",
     "SimINSOff", "SimINSNorm", "SimINSNav", "SimINSInFlt",
+    "SimFuelSwitchTest", "SimFuelSwitchNorm", "SimFuelSwitchResv", "SimFuelSwitchWingInt", "SimFuelSwitchWingExt", "SimFuelSwitchCenterExt",
 
     "SimEpuToggle",
     "SimLandingLightCycle",
     "SimParkingBrakeCycle",
-    "SimRightAPSwitch",
     "SimLeftAPSwitch",
     "SimStepMasterArm",
+    "SimDriftCO",
     "SimStepHSIMode",
     "SimRFSwitch",
     "SimAntennaSelectCycle",
@@ -56,7 +56,8 @@ REQUIRED_CALLBACKS = [
     "SimHUDBrightness",
     "SimReticleSwitch",
     "SimHUDDED",
-
+    "SimAud1Com1",
+    "SimAud1Com2",
     "SimDigitalBUP",
     "SimAltFlaps",
     "SimManualFlyup",
@@ -94,9 +95,12 @@ REQUIRED_CALLBACKS = [
     "SimUFCPower",
     "SimGPSPower",
     "SimDLPower",
-    "SimMAPPower"
+    "SimMAPPower",
+    "SimInhibitVMS"
 ]
+
 BEEP = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + r"\beep.wav"
+REFRESH_FREQUENCY = 2
 
 # falcon bms shared memory reader; see https://github.com/nmeier/simscript
 # <--- start license: MIT License Copyright (c) 2021 Nils Meier
