@@ -429,7 +429,7 @@ def get_keyfile_content(keyfile):
     try:
         keyfile_file = open(keyfile, "r")
     except:
-        print("Keyfile not found. Check config"
+        print("Keyfile not found. Check config")
         input("Press ENTER to exit")
         sys.exit(1)
 
