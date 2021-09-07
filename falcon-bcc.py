@@ -38,7 +38,7 @@ REQUIRED_CALLBACKS = [
     "SimEWSProgOne", "SimEWSProgTwo", "SimEWSProgThree", "SimEWSProgFour",
     "SimRALTSTDBY", "SimRALTON", "SimRALTOFF",
     "SimAirSourceOff", "SimAirSourceNorm", "SimAirSourceDump", "SimAirSourceRam",
-    "SimINSOff", "SimINSNorm", "SimINSNav", "SimINSInFlt",
+    "SimINSOff", "SimINSNorm", "SimINSNav",
     "SimFuelSwitchTest", "SimFuelSwitchNorm", "SimFuelSwitchResv", "SimFuelSwitchWingInt", "SimFuelSwitchWingExt", "SimFuelSwitchCenterExt",
 
     "SimEpuToggle",
