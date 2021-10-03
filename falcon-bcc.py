@@ -448,9 +448,15 @@ def get_keyfile_content(keyfile):
 def check_required_callbacks(assigned_callbacks):
     # check if every callback from REQUIRED_CALLBACKS is assigned in the keyfile
     if not all(callback in assigned_callbacks for callback in REQUIRED_CALLBACKS):
+        missing_callbacks = []
+        for cb in REQUIRED_CALLBACKS:
+            if cb not in assigned_callbacks:
+                missing_callbacks.append(cb)
+
         print("Not all callbacks from the REQUIRED_CALLBACKS assigned in keyfile.")
         print("Please edit your keyfile and assign keyboard keys to them.")
-        input("Press ENTER to exit")
+        print("\tMissing calbacks: {}".format(missing_callbacks))
+        input("\nPress ENTER to exit")
         sys.exit(1)
 
 def randomize_cockpit(keyfile_content):
