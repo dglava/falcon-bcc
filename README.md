@@ -34,6 +34,9 @@ during the randomizing for better feedback when it's done.
 ### Dependencies
 Just the Python standard library.
 
+Makes use of [nmeier's great utility](https://github.com/nmeier/simscript)
+for reading Falcon BMS' shared memory area.
+
 ### Tip for Usage
 For ultimate convenience, as with my other [utility which displays briefings on a smartphone](https://github.com/dglava/falcon-briefing),
 it is recommended to add it to a startup script, which would start it
