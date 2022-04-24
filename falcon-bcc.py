@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # Falcon-BCC
-# Copyright 2021 Dino Duratović
+# Copyright 2021-2022 Dino Duratović
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,6 +40,13 @@ REQUIRED_CALLBACKS = [
     "SimAirSourceOff", "SimAirSourceNorm", "SimAirSourceDump", "SimAirSourceRam",
     "SimINSOff", "SimINSNorm", "SimINSNav",
     "SimFuelSwitchTest", "SimFuelSwitchNorm", "SimFuelSwitchResv", "SimFuelSwitchWingInt", "SimFuelSwitchWingExt", "SimFuelSwitchCenterExt",
+    "SimExtlAntiColl",
+    "SimAntiColModeOff", "SimAntiColMode1", "SimAntiColMode2", "SimAntiColMode3", "SimAntiColMode4", "SimAntiColModeA", "SimAntiColModeB", "SimAntiColModeC",
+    "SimExtlSteady",
+    "SimWingLightCycle",
+    "SimFuselageLightCycle",
+    "SimExtlPower",
+    "SimExtlMasterOff", "SimExtlMasterCovertAll", "SimExtlMasterCovertAC", "SimExtlMasterCovertForm", "SimExtlMasterNorm",
 
     "SimEpuToggle",
     "SimLandingLightCycle",
@@ -65,10 +72,6 @@ REQUIRED_CALLBACKS = [
     "SimTrimAPDisc",
     "SimToggleMasterFuel",
     "SimToggleAuxComMaster",
-    "SimExtlPower",
-    "SimExtlAntiColl",
-    "SimExtlSteady",
-    "SimExtlWing",
     "SimEcmPower",
     "SimEngCont",
     "SimMPOToggle",
