@@ -41,8 +41,3 @@ for reading Falcon BMS' shared memory area.
 For ultimate convenience, as with my other [utility which displays briefings on a smartphone](https://github.com/dglava/falcon-briefing),
 it is recommended to add it to a startup script, which would start it
 together with Falcon BMS.
-
-You can also compile it into a standalone EXE with
-[PyInstaller](https://www.pyinstaller.org/). I might post pre-compiled
-versions in this repository (note the warning related to PyInstaller
-executables [here](https://github.com/dglava/falcon-briefing#download))
