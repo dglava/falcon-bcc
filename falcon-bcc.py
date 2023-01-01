@@ -48,7 +48,7 @@ REQUIRED_CALLBACKS = [
     "SimExtlPower",
     "SimExtlMasterOff", "SimExtlMasterCovertAll", "SimExtlMasterCovertAC", "SimExtlMasterCovertForm", "SimExtlMasterNorm",
     "SimEcmPowerOn","SimEcmPowerOff",
-    "SimXMTASPISOper", "SimXMTASPISStdby", "SimXMTASPISToggle",
+    "SimXMTASPISToggle",
 
     "SimEpuToggle",
     "SimLandingLightCycle",
