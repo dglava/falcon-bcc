@@ -87,7 +87,6 @@ REQUIRED_CALLBACKS = [
     "SimGndJettEnable",
     "SimCATSwitch",
     "SimBrakeChannelToggle",
-    "SimHookToggle",
     "SimLaserArmToggle",
     "SimExtFuelTrans",
     "SimLeftHptPower",
