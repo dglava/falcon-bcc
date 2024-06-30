@@ -22,10 +22,13 @@
 import sys
 import ctypes
 import ctypes.wintypes
+import struct
 import time
 import random
 import winsound
 import os.path
+from enum import IntEnum
+import mmap
 
 KEYFILE = r"C:\Falcon BMS\User\Config\your.key"
 REQUIRED_CALLBACKS = [
@@ -105,219 +108,255 @@ REQUIRED_CALLBACKS = [
 BEEP = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + r"\beep.wav"
 REFRESH_FREQUENCY = 2
 
-# falcon bms shared memory reader; see https://github.com/nmeier/simscript
-# <--- start license: MIT License Copyright (c) 2021 Nils Meier
-FILE_MAP_COPY = 0x0001
-FILE_MAP_WRITE = 0x0002
-FILE_MAP_READ = 0x0004
-FILE_MAP_ALL_ACCESS = 0x0008
+FLIGHT_DATA_SHARED_MEMORY_NAME = "FalconSharedMemoryArea"
+FLIGHT_DATA2_SHARED_MEMORY_NAME = "FalconSharedMemoryArea2"
+INTELLIVIBE_SHARED_MEMORY_NAME = "FalconIntellivibeSharedMemoryArea"
+STRING_SHARED_MEMORY_NAME = "FalconSharedMemoryAreaString"
+STRINGDATA_AREA_SIZE_MAX = 1024 * 1024
 
-class FLIGHTDATA(ctypes.Structure):
-    _fields_ = (
-        ("x", ctypes.wintypes.FLOAT),
-        ("y", ctypes.wintypes.FLOAT),
-        ("z", ctypes.wintypes.FLOAT),
-        ("xDot", ctypes.wintypes.FLOAT),
-        ("yDot", ctypes.wintypes.FLOAT),
-        ("zDot", ctypes.wintypes.FLOAT),
-        ("alpha", ctypes.wintypes.FLOAT),
-        ("beta", ctypes.wintypes.FLOAT),
-        ("gamma", ctypes.wintypes.FLOAT),
-        ("pitch", ctypes.wintypes.FLOAT),
-        ("roll", ctypes.wintypes.FLOAT),
-        ("yaw", ctypes.wintypes.FLOAT),
-        ("mach", ctypes.wintypes.FLOAT),
-        ("kias", ctypes.wintypes.FLOAT),
-        ("vt", ctypes.wintypes.FLOAT),
-        ("gs", ctypes.wintypes.FLOAT),
-        ("windOffset", ctypes.wintypes.FLOAT),
-        ("nozzlePos", ctypes.wintypes.FLOAT),
-        ("internalFuel", ctypes.wintypes.FLOAT),
-        ("externalFuel", ctypes.wintypes.FLOAT),
-        ("fuelFlow", ctypes.wintypes.FLOAT),
-        ("rpm", ctypes.wintypes.FLOAT),
-        ("ftit", ctypes.wintypes.FLOAT),
-        ("gearPos", ctypes.wintypes.FLOAT),
-        ("speedBrake", ctypes.wintypes.FLOAT),
-        ("epuFuel", ctypes.wintypes.FLOAT),
-        ("oilPressure", ctypes.wintypes.FLOAT),
-        ("lightBits", ctypes.wintypes.INT),
-        ("headPitch", ctypes.wintypes.FLOAT),
-        ("headRoll", ctypes.wintypes.FLOAT),
-        ("headYaw", ctypes.wintypes.FLOAT),
-        ("lightBits2", ctypes.wintypes.INT),
-        ("lightBits3", ctypes.wintypes.INT),
-        ("ChaffCount", ctypes.wintypes.FLOAT),
-        ("FlareCount", ctypes.wintypes.FLOAT),
-        ("NoseGearPos", ctypes.wintypes.FLOAT),
-        ("LeftGearPos", ctypes.wintypes.FLOAT),
-        ("RightGearPos", ctypes.wintypes.FLOAT),
-        ("AdiIlsHorPos", ctypes.wintypes.FLOAT),
-        ("AdiIlsVerPos", ctypes.wintypes.FLOAT),
-        ("courseState", ctypes.wintypes.INT),
-        ("headingState", ctypes.wintypes.INT),
-        ("totalStates", ctypes.wintypes.INT),
-        ("courseDeviation", ctypes.wintypes.FLOAT),
-        ("desiredCourse", ctypes.wintypes.FLOAT),
-        ("distanceToBeacon", ctypes.wintypes.FLOAT),
-        ("bearingToBeacon", ctypes.wintypes.FLOAT),
-        ("currentHeading", ctypes.wintypes.FLOAT),
-        ("desiredHeading", ctypes.wintypes.FLOAT),
-        ("deviationLimit", ctypes.wintypes.FLOAT),
-        ("halfDeviationLimit", ctypes.wintypes.FLOAT),
-        ("localizerCourse", ctypes.wintypes.FLOAT),
-        ("airbaseX", ctypes.wintypes.FLOAT),
-        ("airbaseY", ctypes.wintypes.FLOAT),
-        ("totalValues", ctypes.wintypes.FLOAT),
-        ("TrimPitch", ctypes.wintypes.FLOAT),
-        ("TrimRoll", ctypes.wintypes.FLOAT),
-        ("TrimYaw", ctypes.wintypes.FLOAT),
-        ("hsiBits", ctypes.wintypes.INT),
-        ("DEDLines", (ctypes.c_char * 26) * 5),
-        ("Invert", (ctypes.c_char * 26) * 5),
-        ("PFLLines", (ctypes.c_char * 26) * 5),
-        ("PFLInvert", (ctypes.c_char * 26) * 5),
-        ("UFCTChan", ctypes.wintypes.INT),
-        ("AUXTChan", ctypes.wintypes.INT),
-        ("RwrObjectCount", ctypes.wintypes.INT),
-        ("RWRsymbol", ctypes.wintypes.INT * 40),
-        ("bearing", ctypes.wintypes.FLOAT * 40),
-        ("missileActivity", ctypes.wintypes.ULONG * 40),
-        ("missileLaunch", ctypes.wintypes.ULONG * 40),
-        ("selected", ctypes.wintypes.ULONG * 40),
-        ("lethality", ctypes.wintypes.FLOAT * 40),
-        ("newDetection", ctypes.wintypes.ULONG * 40),
-        ("fwd", ctypes.wintypes.FLOAT),
-        ("aft", ctypes.wintypes.FLOAT),
-        ("total", ctypes.wintypes.FLOAT),
-        ("VersionNum", ctypes.wintypes.INT),
-        ("headX", ctypes.wintypes.FLOAT),
-        ("headY", ctypes.wintypes.FLOAT),
-        ("headZ", ctypes.wintypes.FLOAT),
-        ("MainPower", ctypes.wintypes.INT),
-    )
+class FlightData(ctypes.Structure):
+    _fields_ = [
+        ("x", ctypes.c_float),
+        ("y", ctypes.c_float),
+        ("z", ctypes.c_float),
+        ("xDot", ctypes.c_float),
+        ("yDot", ctypes.c_float),
+        ("zDot", ctypes.c_float),
+        ("alpha", ctypes.c_float),
+        ("beta", ctypes.c_float),
+        ("gamma", ctypes.c_float),
+        ("pitch", ctypes.c_float),
+        ("roll", ctypes.c_float),
+        ("yaw", ctypes.c_float),
+        ("mach", ctypes.c_float),
+        ("kias", ctypes.c_float),
+        ("vt", ctypes.c_float),
+        ("gs", ctypes.c_float),
+        ("windOffset", ctypes.c_float),
+        ("nozzlePos", ctypes.c_float),
+        ("internalFuel", ctypes.c_float),
+        ("externalFuel", ctypes.c_float),
+        ("fuelFlow", ctypes.c_float),
+        ("rpm", ctypes.c_float),
+        ("ftit", ctypes.c_float),
+        ("gearPos", ctypes.c_float),
+        ("speedBrake", ctypes.c_float),
+        ("epuFuel", ctypes.c_float),
+        ("oilPressure", ctypes.c_float),
+        ("lightBits", ctypes.c_uint),
+        ("headPitch", ctypes.c_float),
+        ("headRoll", ctypes.c_float),
+        ("headYaw", ctypes.c_float),
+        ("lightBits2", ctypes.c_uint),
+        ("lightBits3", ctypes.c_uint),
+        ("ChaffCount", ctypes.c_float),
+        ("FlareCount", ctypes.c_float),
+        ("NoseGearPos", ctypes.c_float),
+        ("LeftGearPos", ctypes.c_float),
+        ("RightGearPos", ctypes.c_float),
+        ("AdiIlsHorPos", ctypes.c_float),
+        ("AdiIlsVerPos", ctypes.c_float),
+        ("courseState", ctypes.c_int),
+        ("headingState", ctypes.c_int),
+        ("totalStates", ctypes.c_int),
+        ("courseDeviation", ctypes.c_float),
+        ("desiredCourse", ctypes.c_float),
+        ("distanceToBeacon", ctypes.c_float),
+        ("bearingToBeacon", ctypes.c_float),
+        ("currentHeading", ctypes.c_float),
+        ("desiredHeading", ctypes.c_float),
+        ("deviationLimit", ctypes.c_float),
+        ("halfDeviationLimit", ctypes.c_float),
+        ("localizerCourse", ctypes.c_float),
+        ("airbaseX", ctypes.c_float),
+        ("airbaseY", ctypes.c_float),
+        ("totalValues", ctypes.c_float),
+        ("TrimPitch", ctypes.c_float),
+        ("TrimRoll", ctypes.c_float),
+        ("TrimYaw", ctypes.c_float),
+        ("hsiBits", ctypes.c_uint),
+        ("DEDLines", ctypes.c_char * 5 * 26),
+        ("Invert", ctypes.c_char * 5 * 26),
+        ("PFLLines", ctypes.c_char * 5 * 26),
+        ("PFLInvert", ctypes.c_char * 5 * 26),
+        ("UFCTChan", ctypes.c_int),
+        ("AUXTChan", ctypes.c_int),
+        ("RwrObjectCount", ctypes.c_int),
+        ("RWRsymbol", ctypes.c_int * 40),
+        ("bearing", ctypes.c_float * 40),
+        ("missileActivity", ctypes.c_ulong * 40),
+        ("missileLaunch", ctypes.c_ulong * 40),
+        ("selected", ctypes.c_ulong * 40),
+        ("lethality", ctypes.c_float * 40),
+        ("newDetection", ctypes.c_ulong * 40),
+        ("fwd", ctypes.c_float),
+        ("aft", ctypes.c_float),
+        ("total", ctypes.c_float),
+        ("VersionNum", ctypes.c_int),
+        ("headX", ctypes.c_float),
+        ("headY", ctypes.c_float),
+        ("headZ", ctypes.c_float),
+        ("MainPower", ctypes.c_int),
+        ]
 
-class FLIGHTDATA2(ctypes.Structure):
-    _fields_ = (
-        ("nozzlePos2", ctypes.wintypes.FLOAT),
-        ("rpm2", ctypes.wintypes.FLOAT),
-        ("ftit2", ctypes.wintypes.FLOAT),
-        ("oilPressure2", ctypes.wintypes.FLOAT),
-        ("navMode", ctypes.wintypes.BYTE),
-        ("AAUZ", ctypes.wintypes.FLOAT),
-        ("tacanInfo", ctypes.wintypes.CHAR * 2),
-        ("AltCalReading", ctypes.wintypes.INT),
-        ("altBits", ctypes.wintypes.INT),
-        ("powerBits", ctypes.wintypes.INT),
-        ("blinkBits", ctypes.wintypes.INT),
-        ("cmdsMode", ctypes.wintypes.INT),
-        ("BupUhfPreset", ctypes.wintypes.INT),
-        ("BupUhfFreq", ctypes.wintypes.INT),
-        ("cabinAlt", ctypes.wintypes.FLOAT),
-        ("hydPressureA", ctypes.wintypes.FLOAT),
-        ("hydPressureB", ctypes.wintypes.FLOAT),
-        ("currentTime", ctypes.wintypes.INT),
-        ("vehicleACD", ctypes.wintypes.SHORT),
-        ("VersionNum", ctypes.wintypes.INT),
-        ("fuelFlow2", ctypes.wintypes.FLOAT),
-        ("RwrInfo", ctypes.wintypes.CHAR * 512),
-        ("lefPos", ctypes.wintypes.FLOAT),
-        ("tefPos", ctypes.wintypes.FLOAT),
-        ("vtolPos", ctypes.wintypes.FLOAT),
-        ("pilotsOnline", ctypes.wintypes.CHAR),
-        ("pilotsCallsign", ctypes.wintypes.CHAR * 32 * 12),
-        ("pilotsStatus", ctypes.wintypes.CHAR * 32),
-        ("bumpIntensity", ctypes.wintypes.FLOAT),
-        ("latitude", ctypes.wintypes.FLOAT),
-        ("longitude", ctypes.wintypes.FLOAT),
-        ("RTT_size", ctypes.wintypes.USHORT * 2),
-        ("RTT_area", ctypes.wintypes.USHORT * 7 * 4),
-        ("iffBackupMode1Digit1", ctypes.wintypes.CHAR),
-        ("iffBackupMode1Digit2", ctypes.wintypes.CHAR),
-        ("iffBackupMode3Digit1", ctypes.wintypes.CHAR),
-        ("iffBackupMode3Digit2", ctypes.wintypes.CHAR),
-        ("instrLight", ctypes.wintypes.CHAR),
-        ("bettyBits", ctypes.wintypes.UINT),
-        ("miscBits", ctypes.wintypes.UINT),
-        ("RALT", ctypes.wintypes.FLOAT),
-        ("bingoFuel", ctypes.wintypes.FLOAT),
-        ("caraAlow", ctypes.wintypes.FLOAT),
-        ("bullseyeX", ctypes.wintypes.FLOAT),
-        ("bullseyeY", ctypes.wintypes.FLOAT),
-        ("BMSVersionMajor", ctypes.wintypes.INT),
-        ("BMSVersionMinor", ctypes.wintypes.INT),
-        ("BMSVersionMicro", ctypes.wintypes.INT),
-        ("BMSBuildNumber", ctypes.wintypes.INT),
-        ("StringAreaSize", ctypes.wintypes.UINT),
-        ("StringAreaTime", ctypes.wintypes.UINT),
-        ("DrawingAreaSize", ctypes.wintypes.UINT),
-        ("turnRate", ctypes.wintypes.FLOAT),
-)
+class IntellivibeData(ctypes.Structure):
+    _fields_ = [
+        ("AAMissileFired", ctypes.c_ubyte),
+        ("AGMissileFired", ctypes.c_ubyte),
+        ("BombDropped", ctypes.c_ubyte),
+        ("FlareDropped", ctypes.c_ubyte),
+        ("ChaffDropped", ctypes.c_ubyte),
+        ("BulletsFired", ctypes.c_ubyte),
+        ("CollisionCounter", ctypes.c_int),
+        ("IsFiringGun", ctypes.c_bool),
+        ("IsEndFlight", ctypes.c_bool),
+        ("IsEjecting", ctypes.c_bool),
+        ("In3D", ctypes.c_bool),
+        ("IsPaused", ctypes.c_bool),
+        ("IsFrozen", ctypes.c_bool),
+        ("IsOverG", ctypes.c_bool),
+        ("IsOnGround", ctypes.c_bool),
+        ("IsExitGame", ctypes.c_bool),
+        ("Gforce", ctypes.c_float),
+        ("eyex", ctypes.c_float),
+        ("eyey", ctypes.c_float),
+        ("eyez", ctypes.c_float),
+        ("lastdamage", ctypes.c_int),
+        ("damageforce", ctypes.c_float),
+        ("whendamage", ctypes.c_uint),
+        ]
 
-class INTELLIVIBEDATA(ctypes.Structure):
-    _fields_ = (
-        ("AAMissileFired", ctypes.wintypes.BYTE),
-        ("AGMissileFired", ctypes.wintypes.BYTE),
-        ("BombDropped", ctypes.wintypes.BYTE),
-        ("FlareDropped", ctypes.wintypes.BYTE),
-        ("ChaffDropped", ctypes.wintypes.BYTE),
-        ("BulletsFired", ctypes.wintypes.BYTE),
-        ("CollisionCounter", ctypes.wintypes.INT),
-        ("IsFiringGun", ctypes.wintypes.BOOLEAN),
-        ("IsEndFlight", ctypes.wintypes.BOOLEAN),
-        ("IsEjecting", ctypes.wintypes.BOOLEAN),
-        ("In3D", ctypes.wintypes.BOOLEAN),
-        ("IsPaused", ctypes.wintypes.BOOLEAN),
-        ("IsFrozen", ctypes.wintypes.BOOLEAN),
-        ("IsOverG", ctypes.wintypes.BOOLEAN),
-        ("IsOnGround", ctypes.wintypes.BOOLEAN),
-        ("IsExitGame", ctypes.wintypes.BOOLEAN),
-        ("Gforce", ctypes.wintypes.FLOAT),
-        ("eyex", ctypes.wintypes.FLOAT),
-        ("eyey", ctypes.wintypes.FLOAT),
-        ("eyez", ctypes.wintypes.FLOAT),
-        ("lastdamage", ctypes.wintypes.INT),
-        ("damageforce", ctypes.wintypes.FLOAT),
-        ("whendamage", ctypes.wintypes.INT)
-)
+class FlightData2(ctypes.Structure):
+    _fields_ = [
+        ("nozzlePos2", ctypes.c_float),
+        ("rpm2", ctypes.c_float),
+        ("ftit2", ctypes.c_float),
+        ("oilPressure2", ctypes.c_float),
+        ("navMode", ctypes.c_byte),
+        ("AAUZ", ctypes.c_float),
+        ("tacanInfo", ctypes.c_char * 2),
+        ("AltCalReading", ctypes.c_int),
+        ("altBits", ctypes.c_uint),
+        ("powerBits", ctypes.c_uint),
+        ("blinkBits", ctypes.c_uint),
+        ("cmdsMode", ctypes.c_int),
+        ("uhf_panel_preset", ctypes.c_int),
+        ("uhf_panel_frequency", ctypes.c_int),
+        ("cabinAlt", ctypes.c_float),
+        ("hydPressureA", ctypes.c_float),
+        ("hydPressureB", ctypes.c_float),
+        ("currentTime", ctypes.c_int),
+        ("vehicleACD", ctypes.c_short),
+        ("VersionNum", ctypes.c_int),
+        ("fuelFlow2", ctypes.c_float),
+        ("RwrInfo", ctypes.c_char * 512),
+        ("lefPos", ctypes.c_float),
+        ("tefPos", ctypes.c_float),
+        ("vtolPos", ctypes.c_float),
+        ("pilotsOnline", ctypes.c_char),
+        ("pilotsCallsign", (ctypes.c_char * 12) * 32),
+        ("pilotsStatus", ctypes.c_char * 32),
+        ("bumpIntensity", ctypes.c_float),
+        ("latitude", ctypes.c_float),
+        ("longitude", ctypes.c_float),
+        ("RTT_size", ctypes.c_ushort * 2),
+        ("RTT_area", (ctypes.c_ushort * 7) * 4),
+        ("iffBackupMode1Digit1", ctypes.c_char),
+        ("iffBackupMode1Digit2", ctypes.c_char),
+        ("iffBackupMode3ADigit1", ctypes.c_char),
+        ("iffBackupMode3ADigit2", ctypes.c_char),
+        ("instrLight", ctypes.c_char),
+        ("bettyBits", ctypes.c_uint),
+        ("miscBits", ctypes.c_uint),
+        ("RALT", ctypes.c_float),
+        ("bingoFuel", ctypes.c_float),
+        ("caraAlow", ctypes.c_float),
+        ("bullseyeX", ctypes.c_float),
+        ("bullseyeY", ctypes.c_float),
+        ("BMSVersionMajor", ctypes.c_int),
+        ("BMSVersionMinor", ctypes.c_int),
+        ("BMSVersionMicro", ctypes.c_int),
+        ("BMSBuildNumber", ctypes.c_int),
+        ("StringAreaSize", ctypes.c_uint),
+        ("StringAreaTime", ctypes.c_uint),
+        ("DrawingAreaSize", ctypes.c_uint),
+        ("turnRate", ctypes.c_float),
+        ("floodConsole", ctypes.c_char),
+        ("magDeviationSystem", ctypes.c_float),
+        ("magDeviationReal", ctypes.c_float),
+        ("ecmBits", ctypes.c_uint * 5),
+        ("ecmOper", ctypes.c_char),
+        ("RWRjammingStatus", ctypes.c_char * 40),
+        ("radio2_preset", ctypes.c_int),
+        ("radio2_frequency", ctypes.c_int),
+        ("iffTransponderActiveCode1", ctypes.c_char),
+        ("iffTransponderActiveCode2", ctypes.c_short),
+        ("iffTransponderActiveCode3A", ctypes.c_short),
+        ("iffTransponderActiveCodeC", ctypes.c_short),
+        ("iffTransponderActiveCode4", ctypes.c_short),
+        ]
 
-_pFlightData = None
-_pFlightData2 = None
-_pIntellivibeData = None
+class StringIdentifier(IntEnum):
+    BmsExe = 0
+    KeyFile = 1
+    BmsBasedir = 2
+    BmsBinDirectory = 3
+    BmsDataDirectory = 4
+    BmsUIArtDirectory = 5
+    BmsUserDirectory = 6
+    BmsAcmiDirectory = 7
+    BmsBriefingsDirectory = 8
+    BmsConfigDirectory = 9
+    BmsLogsDirectory = 10
+    BmsPatchDirectory = 11
+    BmsPictureDirectory = 12
+    ThrName = 13
+    ThrCampaigndir = 14
+    ThrTerraindir = 15
+    ThrArtdir = 16
+    ThrMoviedir = 17
+    ThrUisounddir = 18
+    ThrObjectdir = 19
+    Thr3ddatadir = 20
+    ThrMisctexdir = 21
+    ThrSounddir = 22
+    ThrTacrefdir = 23
+    ThrSplashdir = 24
+    ThrCockpitdir = 25
+    ThrSimdatadir = 26
+    ThrSubtitlesdir = 27
+    ThrTacrefpicsdir = 28
+    AcName = 29
+    AcNCTR = 30
+    ButtonsFile = 31
+    CockpitFile = 32
+    NavPoint = 33
+    ThrTerrdatadir = 34
 
-def getFlightData():
-    global _pFlightData
-    if _pFlightData == None:
-        handle = ctypes.windll.kernel32.OpenFileMappingA(FILE_MAP_READ|FILE_MAP_WRITE, False, "FalconSharedMemoryArea".encode())
-        if handle:
-            ctypes.windll.kernel32.MapViewOfFile.restype = ctypes.POINTER(FLIGHTDATA)
-            _pFlightData = ctypes.windll.kernel32.MapViewOfFile(handle, FILE_MAP_READ|FILE_MAP_WRITE, 0, 0, 0)
-    if _pFlightData == None:
-        raise EnvironmentError("can't access falcon shared memory area")
-    return _pFlightData.contents
+def read_shared_memory(name, size, data_class=None):
+    try:
+        shm = mmap.mmap(-1, size, name, access=mmap.ACCESS_READ)
+        if data_class:
+            buffer = shm.read(size)
+            data = data_class.from_buffer_copy(buffer)
+            shm.close()
+            return data
+        else:
+            version_num = struct.unpack('I', shm.read(4))[0]
+            num_strings = struct.unpack('I', shm.read(4))[0]
+            data_size = struct.unpack('I', shm.read(4))[0]
+            strings_list = []
+            for _ in range(num_strings):
+                str_id = struct.unpack('I', shm.read(4))[0]
+                str_length = struct.unpack('I', shm.read(4))[0]
+                str_data = shm.read(str_length + 1).decode('utf-8').rstrip('\x00')
 
-def getFlightData2():
-    global _pFlightData2
-    if _pFlightData2 == None:
-        handle = ctypes.windll.kernel32.OpenFileMappingA(FILE_MAP_READ|FILE_MAP_WRITE, False, "FalconSharedMemoryArea2".encode())
-        if handle:
-            ctypes.windll.kernel32.MapViewOfFile.restype = ctypes.POINTER(FLIGHTDATA2)
-            _pFlightData2 = ctypes.windll.kernel32.MapViewOfFile(handle, FILE_MAP_READ|FILE_MAP_WRITE, 0, 0, 0)
-    if not _pFlightData2:
-        raise EnvironmentError("can't access falcon shared memory area")
-    return _pFlightData2.contents
-
-def getIntellivibeData():
-    global _pIntellivibeData
-    if _pIntellivibeData == None:
-        handle = ctypes.windll.kernel32.OpenFileMappingA(FILE_MAP_READ|FILE_MAP_WRITE, False, "FalconIntellivibeSharedMemoryArea".encode())
-        if handle:
-            ctypes.windll.kernel32.MapViewOfFile.restype = ctypes.POINTER(INTELLIVIBEDATA)
-            _pIntellivibeData = ctypes.windll.kernel32.MapViewOfFile(handle, FILE_MAP_READ|FILE_MAP_WRITE, 0, 0, 0)
-    if not _pIntellivibeData:
-        raise EnvironmentError("can't access falcon shared memory area")
-    return _pIntellivibeData.contents
-#  end MIT license --->
+                identifier = StringIdentifier(str_id).name
+                strings_list.append((identifier, str_data))
+            return strings_list
+    except Exception as e:
+        print(f"Error reading shared memory '{name}': {e}")
+        return None
 
 # generating keyboard events; see https://stackoverflow.com/a/23468236
 # <--- start license: Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)
@@ -489,11 +528,15 @@ def main():
     print("Waiting to randomize cockpit...")
     while True:
         try:
-            in_3d = getIntellivibeData().In3D
-            on_ground = getIntellivibeData().IsOnGround
-            end_flight = getIntellivibeData().IsEndFlight
-            main_power = getFlightData().MainPower
-            cmds_mode = getFlightData2().cmdsMode
+            fd = read_shared_memory(FLIGHT_DATA_SHARED_MEMORY_NAME, ctypes.sizeof(FlightData), FlightData)
+            fd2 = read_shared_memory(FLIGHT_DATA2_SHARED_MEMORY_NAME, ctypes.sizeof(FlightData2), FlightData2)
+            ivd = read_shared_memory(INTELLIVIBE_SHARED_MEMORY_NAME, ctypes.sizeof(IntellivibeData), IntellivibeData)
+
+            in_3d = ivd.In3D
+            on_ground = ivd.IsOnGround
+            end_flight = ivd.IsEndFlight
+            main_power = fd.MainPower
+            cmds_mode = fd2.cmdsMode
         except:
             continue
 
