@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # Falcon-BCC
-# Copyright 2021-2023 Dino Duratović
+# Copyright 2021-2024 Dino Duratović
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,8 +29,17 @@ import winsound
 import os.path
 from enum import IntEnum
 import mmap
+import itertools
 
-KEYFILE = r"C:\Falcon BMS\User\Config\your.key"
+KEYFILE_PATH = r"D:\Igre\Falcon BMS 4.37\User\Config\test.key"
+BEEP = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + r"\beep.wav"
+REFRESH_FREQUENCY = 2
+FLIGHT_DATA_SHARED_MEMORY_NAME = "FalconSharedMemoryArea"
+FLIGHT_DATA2_SHARED_MEMORY_NAME = "FalconSharedMemoryArea2"
+INTELLIVIBE_SHARED_MEMORY_NAME = "FalconIntellivibeSharedMemoryArea"
+STRING_SHARED_MEMORY_NAME = "FalconSharedMemoryAreaString"
+STRINGDATA_AREA_SIZE_MAX = 1024 * 1024
+
 REQUIRED_CALLBACKS = [
     "SimProbeHeatOn", "SimProbeHeatOff", "SimProbeHeatTest",
     "SimFuelPumpOff", "SimFuelPumpNorm", "SimFuelPumpAft", "SimFuelPumpFwd",
@@ -105,14 +114,88 @@ REQUIRED_CALLBACKS = [
     "SimInhibitVMS"
 ]
 
-BEEP = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + r"\beep.wav"
-REFRESH_FREQUENCY = 2
-
-FLIGHT_DATA_SHARED_MEMORY_NAME = "FalconSharedMemoryArea"
-FLIGHT_DATA2_SHARED_MEMORY_NAME = "FalconSharedMemoryArea2"
-INTELLIVIBE_SHARED_MEMORY_NAME = "FalconIntellivibeSharedMemoryArea"
-STRING_SHARED_MEMORY_NAME = "FalconSharedMemoryAreaString"
-STRINGDATA_AREA_SIZE_MAX = 1024 * 1024
+KEYBOARD_SCANCODES = [
+    "0X2", # 1
+    "0X3", # 2
+    "0X4", # 3
+    "0X5", # 4
+    "0X6", # 5
+    "0X7", # 6
+    "0X8", # 7
+    "0X9", # 8
+    "0XA", # 9
+    "0XB", # 0
+    "0XC", # Dash(Minus) / Underscore
+    "0XD", # Equals / Plus
+    "0XE", # Backspace
+    "0XF", # Tab
+    "0X17", # I
+    "0X18", # O
+    "0X19", # P
+    "0X1A", # Left Brace
+    "0X1B", # Right Brace
+    "0X1C", # Enter
+    "0X1E", # A
+    "0X1F", # S
+    "0X20", # D
+    "0X21", # F
+    "0X22", # G
+    "0X23", # H
+    "0X24", # J
+    "0X25", # K
+    "0X26", # L
+    "0X27", # Semicolon / Colon
+    "0X28", # Apostrophe / Doublequote
+    "0X29", # Backquote / Tilde
+    "0X2B", # Backslash / Pipe
+    "0X2D", # X
+    "0X2E", # C
+    "0X2F", # V
+    "0X30", # B
+    "0X31", # N
+    "0X32", # M
+    "0X33", # Comma / Left Bracket
+    "0X34", # Period / Right Bracket
+    "0X35", # Slash / Question Mark
+    "0X37", # Keypad Asterisk
+    "0X3B", # F1
+    "0X3C", # F2
+    "0X3D", # F3
+    "0X3E", # F4
+    "0X3F", # F5
+    "0X40", # F6
+    "0X41", # F7
+    "0X42", # F8
+    "0X43", # F9
+    "0X44", # F10
+    "0X57", # F11
+    "0X58", # F12
+    "0X45", # Num Lock
+    "0X46", # Scroll Lock
+    "0X47", # Keypad 7
+    "0X48", # Keypad 8
+    "0X49", # Keypad 9
+    "0X4A", # Keypad Dash(Minus)
+    "0X4B", # Keypad 4
+    "0X4C", # Keypad 5
+    "0X4D", # Keypad 6
+    "0X4E", # Keypad Plus
+    "0X4F", # Keypad 1
+    "0X50", # Keypad 2
+    "0X51", # Keypad 3
+    "0X52", # Keypad 0
+    "0X53", # Keypad Dot(Period)
+    "0X9C", # Keypad Enter
+    "0X9D", # Right Control
+    "0XB5", # Keypad Slash(Divide)
+    "0XB8", # Right Alt
+    "0XC7", # Home
+    "0XC9", # PgUp
+    "0XCF", # End
+    "0XD1", # PgDown
+    "0XD2", # Insert
+    "0XD3", # Delete
+]
 
 class FlightData(ctypes.Structure):
     _fields_ = [
@@ -199,33 +282,6 @@ class FlightData(ctypes.Structure):
         ("MainPower", ctypes.c_int),
         ]
 
-class IntellivibeData(ctypes.Structure):
-    _fields_ = [
-        ("AAMissileFired", ctypes.c_ubyte),
-        ("AGMissileFired", ctypes.c_ubyte),
-        ("BombDropped", ctypes.c_ubyte),
-        ("FlareDropped", ctypes.c_ubyte),
-        ("ChaffDropped", ctypes.c_ubyte),
-        ("BulletsFired", ctypes.c_ubyte),
-        ("CollisionCounter", ctypes.c_int),
-        ("IsFiringGun", ctypes.c_bool),
-        ("IsEndFlight", ctypes.c_bool),
-        ("IsEjecting", ctypes.c_bool),
-        ("In3D", ctypes.c_bool),
-        ("IsPaused", ctypes.c_bool),
-        ("IsFrozen", ctypes.c_bool),
-        ("IsOverG", ctypes.c_bool),
-        ("IsOnGround", ctypes.c_bool),
-        ("IsExitGame", ctypes.c_bool),
-        ("Gforce", ctypes.c_float),
-        ("eyex", ctypes.c_float),
-        ("eyey", ctypes.c_float),
-        ("eyez", ctypes.c_float),
-        ("lastdamage", ctypes.c_int),
-        ("damageforce", ctypes.c_float),
-        ("whendamage", ctypes.c_uint),
-        ]
-
 class FlightData2(ctypes.Structure):
     _fields_ = [
         ("nozzlePos2", ctypes.c_float),
@@ -294,6 +350,33 @@ class FlightData2(ctypes.Structure):
         ("iffTransponderActiveCode3A", ctypes.c_short),
         ("iffTransponderActiveCodeC", ctypes.c_short),
         ("iffTransponderActiveCode4", ctypes.c_short),
+        ]
+
+class IntellivibeData(ctypes.Structure):
+    _fields_ = [
+        ("AAMissileFired", ctypes.c_ubyte),
+        ("AGMissileFired", ctypes.c_ubyte),
+        ("BombDropped", ctypes.c_ubyte),
+        ("FlareDropped", ctypes.c_ubyte),
+        ("ChaffDropped", ctypes.c_ubyte),
+        ("BulletsFired", ctypes.c_ubyte),
+        ("CollisionCounter", ctypes.c_int),
+        ("IsFiringGun", ctypes.c_bool),
+        ("IsEndFlight", ctypes.c_bool),
+        ("IsEjecting", ctypes.c_bool),
+        ("In3D", ctypes.c_bool),
+        ("IsPaused", ctypes.c_bool),
+        ("IsFrozen", ctypes.c_bool),
+        ("IsOverG", ctypes.c_bool),
+        ("IsOnGround", ctypes.c_bool),
+        ("IsExitGame", ctypes.c_bool),
+        ("Gforce", ctypes.c_float),
+        ("eyex", ctypes.c_float),
+        ("eyey", ctypes.c_float),
+        ("eyez", ctypes.c_float),
+        ("lastdamage", ctypes.c_int),
+        ("damageforce", ctypes.c_float),
+        ("whendamage", ctypes.c_uint),
         ]
 
 class StringIdentifier(IntEnum):
@@ -406,8 +489,13 @@ def ReleaseKey(hexKeyCode):
     ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
 # end CC BY-SA 3.0 license--->
 
-def send_key(keycode, modifier):
+def send_key(key, modifier):
+    # TODO: look into this some more
+    # the key is passed as a hex string, but it expects an int
+    keycode = int(key, 16)
     # without a delay, it seems to fail when a bunch of modifiers are pressed
+    # TODO: fix the ugly delays for complex modifier buttons
+    # complex modifier combons (ctrl+alt+shift) seemed to have issues
     delay = 0.01
     if modifier == "0":
         PressKey(keycode)
@@ -427,7 +515,9 @@ def send_key(keycode, modifier):
         ReleaseKey(0x1d)
     elif modifier == "3":
         PressKey(0x1d)
+        time.sleep(delay)
         PressKey(0x2a)
+        time.sleep(delay)
         PressKey(keycode)
         time.sleep(delay)
         ReleaseKey(keycode)
@@ -435,12 +525,14 @@ def send_key(keycode, modifier):
         ReleaseKey(0x1d)
     elif modifier == "4":
         PressKey(0x38 + 2048)
+        time.sleep(delay)
         PressKey(keycode)
         time.sleep(delay)
         ReleaseKey(keycode)
         ReleaseKey(0x38 + 2048)
     elif modifier == "5":
         PressKey(0x38 + 2048)
+        time.sleep(delay)
         PressKey(0x2a)
         PressKey(keycode)
         time.sleep(delay)
@@ -449,7 +541,9 @@ def send_key(keycode, modifier):
         ReleaseKey(0x38 + 2048)
     elif modifier == "6":
         PressKey(0x1d)
+        time.sleep(delay)
         PressKey(0x38 + 2048)
+        time.sleep(delay)
         PressKey(keycode)
         time.sleep(delay)
         ReleaseKey(keycode)
@@ -457,8 +551,11 @@ def send_key(keycode, modifier):
         ReleaseKey(0x1d)
     elif modifier == "7":
         PressKey(0x1d)
+        time.sleep(delay)
         PressKey(0x2a)
+        time.sleep(delay)
         PressKey(0x38 + 2048)
+        time.sleep(delay)
         PressKey(keycode)
         time.sleep(delay)
         ReleaseKey(keycode)
@@ -466,40 +563,81 @@ def send_key(keycode, modifier):
         ReleaseKey(0x2a)
         ReleaseKey(0x1d)
 
-def get_keyfile_content(keyfile):
-    keyfile_content = []
-    assigned_callbacks = []
-    try:
-        keyfile_file = open(keyfile, "r")
-    except:
-        print("Keyfile not found. Check config")
-        input("Press ENTER to exit")
-        sys.exit(1)
+def get_keyfile_content(keyfile_path):
+    with open(keyfile_path, "r") as keyfile:
+        return [line.strip().split() for line in keyfile if line.strip()]
 
-    for line in keyfile_file:
-        if line.startswith("#") or line.startswith("SimDoNothing"):
+def get_filtered_keyfile(keyfile_content):
+    filtered_keyfile = []
+    for line in keyfile_content:
+        if line[0].startswith("#") or line[0] == "SimDoNothing":
             continue
-        try:
-            if line.split(" ")[3].upper() != "0XFFFFFFFF":
-                keyfile_content.append(line.strip().split(" ")[:8])
-                assigned_callbacks.append(line.strip().split(" ")[0])
-        except IndexError:
-            pass
-    return keyfile_content, assigned_callbacks
+        else:
+            # joins every element after the 8th into a string (UI description)
+            line[8:] = [" ".join(line[8:])]
+            # use all caps in the hex codes to avoid duplicate issues
+            line[3] = line[3].upper()
+            filtered_keyfile.append(line)
+    return filtered_keyfile
 
-def check_required_callbacks(assigned_callbacks):
-    # check if every callback from REQUIRED_CALLBACKS is assigned in the keyfile
-    if not all(callback in assigned_callbacks for callback in REQUIRED_CALLBACKS):
-        missing_callbacks = []
-        for cb in REQUIRED_CALLBACKS:
-            if cb not in assigned_callbacks:
-                missing_callbacks.append(cb)
+def get_assigned_callbacks(keyfile_content):
+    assigned_callbacks = []
+    for line in keyfile_content:
+        if line[3].upper() != "0XFFFFFFFF":
+            assigned_callbacks.append(line[0])
+    return assigned_callbacks
 
-        print("Not all callbacks from the REQUIRED_CALLBACKS assigned in keyfile.")
-        print("Please edit your keyfile and assign keyboard keys to them.")
-        print("\tMissing calbacks: {}".format(missing_callbacks))
-        input("\nPress ENTER to exit")
-        sys.exit(1)
+def get_unassigned_callbacks(assigned_callbacks):
+    unassigned_callbacks = []
+    for callback in REQUIRED_CALLBACKS:
+        if callback not in assigned_callbacks:
+            unassigned_callbacks.append(callback)
+    return unassigned_callbacks
+
+def get_used_keys(keyfile_filtered):
+    used_keys = set()
+    for line in keyfile_filtered:
+        key = tuple(line[3:5])
+        used_keys.add(key)
+    return used_keys
+
+def get_unused_keys(used_keys):
+    # modifiers like ctrl, shift, alt, etc.
+    modifiers = [str(x) for x in range(0,8)]
+    all_possible_keys = itertools.product(KEYBOARD_SCANCODES, modifiers)
+    unused_keys = set(all_possible_keys) - used_keys
+    return unused_keys
+
+def assign_unused_callbacks(unassigned_callbacks, unused_keys):
+    # TODO: prefer keys without modifiers
+    new_lines = []
+    # TODO: find a way to keep the sound ID (2nd part of the line)
+    callback_template = '{callback} -1 0 {key} {mod} 0 0 1 "GeneratedByFalcon-BCC"'
+    for cb in unassigned_callbacks:
+        for key, mod in unused_keys:
+            new_lines.append(callback_template.format(callback=cb, key=key, mod=mod).split())
+            unused_keys.remove((key, mod))
+            break
+    return new_lines
+
+def backup_keyfile(original_keyfile_content):
+    backup_keyfile_path = f"{KEYFILE_PATH}.bak"
+    with open(backup_keyfile_path, "w") as keyfile:
+        for line in original_keyfile_content:
+            keyfile.write(" ".join(line) + "\n")
+
+def write_new_callbacks_to_file(original_keyfile_content, new_callbacks_content, keyfile_path):
+    single_new_callbacks = [x[0] for x in new_callbacks_content]
+
+    with open(keyfile_path, "w") as keyfile:
+        for line in original_keyfile_content:
+            if line[0] not in single_new_callbacks:
+                    keyfile.write(" ".join(line) + "\n")
+            else:
+                continue
+        keyfile.write("\n\n### Generated by Falcon-BCC ###\n")
+        for line in new_callbacks_content:
+            keyfile.write(" ".join(line) + "\n")
 
 def randomize_cockpit(keyfile_content):
     # randomizes the cockpit by simply triggering each callback a random
@@ -509,22 +647,31 @@ def randomize_cockpit(keyfile_content):
     # that's why the shuffle is needed to make them random as well.
     winsound.PlaySound(BEEP, winsound.SND_LOOP | winsound.SND_ASYNC)
     random.shuffle(keyfile_content)
+    # TODO: use cached callbacks from somewhere else, don't go through whole keyfile again
     for line in keyfile_content:
         if line[0] in REQUIRED_CALLBACKS:
             for rep in range(0, random.randint(1,6)):
-                toggle_callback(line)
+                send_key(line[3], line[4])
     winsound.PlaySound(None, winsound.SND_FILENAME)
     print("Randomized cockpit!")
 
-def toggle_callback(keyfile_line):
-    send_key(int(keyfile_line[3], 16), keyfile_line[4])
-
 def main():
-    keyfile_content, assigned_callbacks = get_keyfile_content(KEYFILE)
-    check_required_callbacks(assigned_callbacks)
+    keyfile_content = get_keyfile_content(KEYFILE_PATH)
+    filtered_keyfile = get_filtered_keyfile(keyfile_content)
+    assigned_callbacks = get_assigned_callbacks(filtered_keyfile)
+    unassigned_callbacks = get_unassigned_callbacks(assigned_callbacks)
+    used_keys = get_used_keys(filtered_keyfile)
+    unused_keys = get_unused_keys(used_keys)
+    new_callbacks_content = assign_unused_callbacks(unassigned_callbacks, unused_keys)
+
+    if new_callbacks_content:
+        backup_keyfile(keyfile_content)
+        write_new_callbacks_to_file(keyfile_content, new_callbacks_content, KEYFILE_PATH)
+        print("Keyfile backed up and new required callbacks added.")
+    else:
+        print("All required Callbacks assigned.")
 
     cockpit_randomized = 0
-
     print("Waiting to randomize cockpit...")
     while True:
         try:
@@ -539,13 +686,11 @@ def main():
             cmds_mode = fd2.cmdsMode
         except:
             continue
-
         if in_3d and on_ground and not main_power and not cockpit_randomized and cmds_mode == 1:
             randomize_cockpit(keyfile_content)
             cockpit_randomized = 1
         elif cockpit_randomized and end_flight and not in_3d:
             cockpit_randomized = 0
-
         time.sleep(REFRESH_FREQUENCY)
 
 main()
