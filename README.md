@@ -4,26 +4,13 @@ Falcon-BCC is an utility for Falcon BMS which randomizes switches in
 the F16 cockpit. It's supposed to make cold-starts a bit more interesting,
 by requiring more attention and not relying on the switches being always
 in the same state. It's probably unrealistic, since the plane would be
-prepared by the ground crew, hence the name (Bad Crew Chief).
+prepared by the ground crew, hence the name - Bad Crew Chief.
 
-It's a very hacky solution. It works by sending key-presses to Falcon BMS
-of the switches and knobs, but a random number of times, bringing them
-into a different state. It reads the keyfile to figure out which keyboard
-keys "to press". For it to work, you need to have the REQUIRED_CALLBACKS
-mentioned in the file mapped. Otherwise it won't work.
-
-It has to be manually triggered using the CMDS Panel. I experimented with
-automatic triggering upon entering the cockpit, but it seems fragile, since
-the Falcon BMS shared memory reports entering the cockpit (the 3D world)
-too soon. Adding a delay might be a solution, but I settled for manually
-triggering it by toggling something in the cockpit. It might change
-in the future.
+It's a hacky solution. It works by sending key-presses to Falcon BMS which
+are assigned to all the various switches and knobs.
 
 ### How to use
-* Edit **falcon-bcc.py** and replace `KEYFILE` with the location of your keyfile.  
-* You should also make sure that all the required callbacks are mapped
-to something in your keyfile. Check the falcon-bcc.py file and `REQUIRED_CALLBACKS` 
-* Then run the **falcon-bcc.py** file with Python.  
+* Run the **falcon-bcc.py** file with Python.  
 * Once in-game, randomize the cockpit by moving the Mode knob on the CMDS
 panel to STBY.
 
@@ -33,9 +20,6 @@ during the randomizing for better feedback when it's done.
 
 ### Dependencies
 Just the Python standard library.
-
-Makes use of [nmeier's great utility](https://github.com/nmeier/simscript)
-for reading Falcon BMS' shared memory area.
 
 ### Tip for Usage
 For ultimate convenience, as with my other [utility which displays briefings on a smartphone](https://github.com/dglava/falcon-briefing),
