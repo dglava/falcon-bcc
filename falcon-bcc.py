@@ -50,7 +50,6 @@ REQUIRED_CALLBACKS = [
     "SimExtlAntiColl", "SimAntiColModeOff", "SimAntiColMode1", "SimAntiColMode2", "SimAntiColMode3", "SimAntiColMode4", "SimAntiColModeA"
     "SimAntiColModeB", "SimAntiColModeC", "SimExtlSteady", "SimWingLightCycle", "SimFuselageLightCycle", "SimExtlPower", "SimStepAARLightsUp", "SimStepAARLightsDown",
     "SimEpuToggle",
-    "SimMainPowerMain", "SimMainPowerBatt", "SimMainPowerOff",
     "SimAVTRSwitch",
     "SimEcmPower", "SimXMit1", "SimXMit2", "SimXMit3",
     "SimEngCont",
