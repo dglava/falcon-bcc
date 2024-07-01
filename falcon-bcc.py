@@ -567,8 +567,9 @@ def get_used_keys(keyfile_filtered):
     return used_keys
 
 def get_unused_keys(used_keys):
-    # modifiers like ctrl, shift, alt, etc.
-    modifiers = [str(x) for x in range(0,8)]
+    # modifiers like ctrl, shift, alt, etc. Remove Alt+Shift ("5") due to
+    # it being the default language switcher shortcut (makes the pop appear)
+    modifiers = ["0", "1", "2", "3", "4", "6", "7"]
     all_possible_keys = itertools.product(KEYBOARD_SCANCODES, modifiers)
     unused_keys = set(all_possible_keys) - used_keys
     return unused_keys
