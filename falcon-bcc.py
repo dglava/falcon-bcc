@@ -572,6 +572,9 @@ def get_unused_keys(used_keys):
     modifiers = ["0", "1", "2", "3", "4", "6", "7"]
     all_possible_keys = itertools.product(KEYBOARD_SCANCODES, modifiers)
     unused_keys = set(all_possible_keys) - used_keys
+    if len(unused_keys) < len(REQUIRED_CALLBACKS):
+        print("Warning: not enough unused keys to assign all required callbacks.")
+        sys.exit(1)
     return unused_keys
 
 def assign_unused_callbacks(unassigned_callbacks, unused_keys):
