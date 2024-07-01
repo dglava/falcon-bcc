@@ -32,7 +32,6 @@ import mmap
 import itertools
 import shutil
 
-KEYFILE_PATH = r"D:\Igre\Falcon BMS 4.37\User\Config\test.key"
 BEEP = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + r"\beep.wav"
 REFRESH_FREQUENCY = 2
 FLIGHT_DATA_SHARED_MEMORY_NAME = "FalconSharedMemoryArea"
@@ -525,6 +524,11 @@ def send_key(key, modifier):
         ReleaseKey(0x2a)
         ReleaseKey(0x1d)
 
+def get_keyfile_path():
+    shared_mem_strings = read_shared_memory(STRING_SHARED_MEMORY_NAME, STRINGDATA_AREA_SIZE_MAX)
+    print("Using keyfile:", shared_mem_strings[1][1])
+    return shared_mem_strings[1][1]
+
 def get_keyfile_content(keyfile_path):
     with open(keyfile_path, "r") as keyfile:
         return [line.strip().split() for line in keyfile if line.strip()]
@@ -601,6 +605,31 @@ def write_new_callbacks_to_file(original_keyfile_content, new_callbacks_content,
             keyfile.write(" ".join(line) + "\n")
     print("All required callbacks added to Keyfile:", keyfile_path)
 
+def wait_until_falcon_running():
+    print("Waiting for Falcon BMS to start.")
+    while True:
+        shared_mem_strings = read_shared_memory(STRING_SHARED_MEMORY_NAME, STRINGDATA_AREA_SIZE_MAX)
+        if shared_mem_strings and shared_mem_strings[1][1]:
+            print("Falcon BMS started!")
+            return
+        time.sleep(1)
+
+def process_keyfile():
+    keyfile_path = get_keyfile_path()
+    keyfile_content = get_keyfile_content(keyfile_path)
+    filtered_keyfile = get_filtered_keyfile(keyfile_content)
+    assigned_callbacks = get_assigned_callbacks(filtered_keyfile)
+    unassigned_callbacks = get_unassigned_callbacks(assigned_callbacks)
+    used_keys = get_used_keys(filtered_keyfile)
+    unused_keys = get_unused_keys(used_keys)
+    new_callbacks_content = assign_unused_callbacks(unassigned_callbacks, unused_keys)
+    if new_callbacks_content:
+        backup_keyfile(keyfile_path)
+        write_new_callbacks_to_file(keyfile_content, new_callbacks_content, keyfile_path)
+    else:
+        print("Keyfile verified: all required callbacks assigned.")
+    return keyfile_path, keyfile_content
+
 def randomize_cockpit(keyfile_content):
     # randomizes the cockpit by simply triggering each callback a random
     # number of times.
@@ -618,35 +647,27 @@ def randomize_cockpit(keyfile_content):
     print("Cockpit randomized!")
 
 def main():
-    keyfile_content = get_keyfile_content(KEYFILE_PATH)
-    filtered_keyfile = get_filtered_keyfile(keyfile_content)
-    assigned_callbacks = get_assigned_callbacks(filtered_keyfile)
-    unassigned_callbacks = get_unassigned_callbacks(assigned_callbacks)
-    used_keys = get_used_keys(filtered_keyfile)
-    unused_keys = get_unused_keys(used_keys)
-    new_callbacks_content = assign_unused_callbacks(unassigned_callbacks, unused_keys)
-
-    if new_callbacks_content:
-        backup_keyfile(KEYFILE_PATH)
-        write_new_callbacks_to_file(keyfile_content, new_callbacks_content, KEYFILE_PATH)
-    else:
-        print("Keyfile verified: all required callbacks assigned.")
+    wait_until_falcon_running()
+    keyfile_path, keyfile_content = process_keyfile()
 
     cockpit_randomized = 0
-    print("Ready: Move the CMDS knob to STBY to start.")
+    print("Ready: Move the CMDS knob to STBY to start randomizing")
     while True:
-        try:
-            fd = read_shared_memory(FLIGHT_DATA_SHARED_MEMORY_NAME, ctypes.sizeof(FlightData), FlightData)
-            fd2 = read_shared_memory(FLIGHT_DATA2_SHARED_MEMORY_NAME, ctypes.sizeof(FlightData2), FlightData2)
-            ivd = read_shared_memory(INTELLIVIBE_SHARED_MEMORY_NAME, ctypes.sizeof(IntellivibeData), IntellivibeData)
+        fd = read_shared_memory(FLIGHT_DATA_SHARED_MEMORY_NAME, ctypes.sizeof(FlightData), FlightData)
+        fd2 = read_shared_memory(FLIGHT_DATA2_SHARED_MEMORY_NAME, ctypes.sizeof(FlightData2), FlightData2)
+        ivd = read_shared_memory(INTELLIVIBE_SHARED_MEMORY_NAME, ctypes.sizeof(IntellivibeData), IntellivibeData)
+        strd = read_shared_memory(STRING_SHARED_MEMORY_NAME, STRINGDATA_AREA_SIZE_MAX)
 
-            in_3d = ivd.In3D
-            on_ground = ivd.IsOnGround
-            end_flight = ivd.IsEndFlight
-            main_power = fd.MainPower
-            cmds_mode = fd2.cmdsMode
-        except:
-            continue
+        if strd[1][1] != keyfile_path:
+            print("\tKeyfile changed, reprocessing...")
+            keyfile_path, keyfile_content = process_keyfile()
+            print("Ready: Move the CMDS knob to STBY to start randomizing")
+
+        in_3d = ivd.In3D
+        on_ground = ivd.IsOnGround
+        end_flight = ivd.IsEndFlight
+        main_power = fd.MainPower
+        cmds_mode = fd2.cmdsMode
         if in_3d and on_ground and not main_power and not cockpit_randomized and cmds_mode == 1:
             randomize_cockpit(keyfile_content)
             cockpit_randomized = 1
