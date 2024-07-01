@@ -76,86 +76,86 @@ REQUIRED_CALLBACKS = [
 ]
 
 KEYBOARD_SCANCODES = [
-    "0X2", # 1
-    "0X3", # 2
-    "0X4", # 3
-    "0X5", # 4
-    "0X6", # 5
-    "0X7", # 6
-    "0X8", # 7
-    "0X9", # 8
-    "0XA", # 9
-    "0XB", # 0
-    "0XC", # Dash(Minus) / Underscore
-    "0XD", # Equals / Plus
-    "0XE", # Backspace
-    "0XF", # Tab
-    "0X17", # I
-    "0X18", # O
-    "0X19", # P
-    "0X1A", # Left Brace
-    "0X1B", # Right Brace
-    "0X1C", # Enter
-    "0X1E", # A
-    "0X1F", # S
-    "0X20", # D
-    "0X21", # F
-    "0X22", # G
-    "0X23", # H
-    "0X24", # J
-    "0X25", # K
-    "0X26", # L
-    "0X27", # Semicolon / Colon
-    "0X28", # Apostrophe / Doublequote
-    "0X29", # Backquote / Tilde
-    "0X2B", # Backslash / Pipe
-    "0X2D", # X
-    "0X2E", # C
-    "0X2F", # V
-    "0X30", # B
-    "0X31", # N
-    "0X32", # M
-    "0X33", # Comma / Left Bracket
-    "0X34", # Period / Right Bracket
-    "0X35", # Slash / Question Mark
-    "0X37", # Keypad Asterisk
-    "0X3B", # F1
-    "0X3C", # F2
-    "0X3D", # F3
-    "0X3E", # F4
-    "0X3F", # F5
-    "0X40", # F6
-    "0X41", # F7
-    "0X42", # F8
-    "0X43", # F9
-    "0X44", # F10
-    "0X57", # F11
-    "0X58", # F12
-    "0X45", # Num Lock
-    "0X46", # Scroll Lock
-    "0X47", # Keypad 7
-    "0X48", # Keypad 8
-    "0X49", # Keypad 9
-    "0X4A", # Keypad Dash(Minus)
-    "0X4B", # Keypad 4
-    "0X4C", # Keypad 5
-    "0X4D", # Keypad 6
-    "0X4E", # Keypad Plus
-    "0X4F", # Keypad 1
-    "0X50", # Keypad 2
-    "0X51", # Keypad 3
-    "0X52", # Keypad 0
-    "0X53", # Keypad Dot(Period)
-    "0X9C", # Keypad Enter
-    "0X9D", # Right Control
-    "0XB5", # Keypad Slash(Divide)
-    "0XB8", # Right Alt
-    "0XC7", # Home
-    "0XC9", # PgUp
-    "0XCF", # End
-    "0XD1", # PgDown
-    "0XD2", # Insert
-    "0XD3", # Delete
+    "0X2", #1
+    "0X3", #2
+    "0X4", #3
+    "0X5", #4
+    "0X6", #5
+    "0X7", #6
+    "0X8", #7
+    "0X9", #8
+    "0XA", #9
+    "0XB", #0
+    "0XC", #Dash(Minus) / Underscore
+    "0XD", #Equals / Plus
+    "0XE", #Backspace
+    "0X16", #U
+    "0X17", #I
+    "0X18", #O
+    "0X19", #P
+    "0X1A", #Left Brace
+    "0X1B", #Right Brace
+    "0X1E", #A
+    "0X1F", #S
+    "0X20", #D
+    "0X22", #G
+    "0X23", #H
+    "0X24", #J
+    "0X25", #K
+    "0X26", #L
+    "0X27", #Semicolon / Colon
+    "0X28", #Apostrophe / Doublequote
+    "0X29", #Backquote / Tilde
+    "0X2B", #Backslash / Pipe
+    "0X2C", #Z
+    "0X2D", #X
+    "0X2E", #C
+    "0X2F", #V
+    "0X30", #B
+    "0X31", #N
+    "0X32", #M
+    "0X33", #Comma / Left Bracket
+    "0X34", #Period / Right Bracket
+    "0X35", #Slash / Question Mark
+    "0X37", #Keypad Asterisk
+    "0X39", #Spacebar
+    "0X3A", #Caps Lock
+    "0X3B", #F1
+    "0X3C", #F2
+    "0X3D", #F3
+    "0X3E", #F4
+    "0X3F", #F5
+    "0X40", #F6
+    "0X41", #F7
+    "0X42", #F8
+    "0X43", #F9
+    "0X44", #F10
+    "0X46", #Scroll Lock
+    "0X47", #Keypad 7
+    "0X48", #Keypad 8
+    "0X49", #Keypad 9
+    "0X4A", #Keypad Dash(Minus)
+    "0X4B", #Keypad 4
+    "0X4C", #Keypad 5
+    "0X4D", #Keypad 6
+    "0X4E", #Keypad Plus
+    "0X4F", #Keypad 1
+    "0X50", #Keypad 2
+    "0X51", #Keypad 3
+    "0X52", #Keypad 0
+    "0X57", #F11
+    "0X58", #F12
+    "0X9C", #Keypad Enter
+    "0XB5", #Keypad Slash(Divide)
+    "0XC7", #Home
+    "0XC8", #Up Arrow
+    "0XC9", #PgUp
+    "0XCB", #Left Arrow
+    "0XCD", #Right Arrow
+    "0XCF", #End
+    "0XD0", #Down Arrow
+    "0XD1", #PgDown
+    "0XD2", #Insert
 ]
 
 class FlightData(ctypes.Structure):
