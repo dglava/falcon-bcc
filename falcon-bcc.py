@@ -611,14 +611,10 @@ def write_new_callbacks_to_file(original_keyfile_content, new_callbacks_content,
             keyfile.write(" ".join(line) + "\n")
     print("All required callbacks added to Keyfile:", keyfile_path)
 
-def wait_until_falcon_running():
-    print("Waiting for Falcon BMS to start.")
-    while True:
-        shared_mem_strings = read_shared_memory(STRING_SHARED_MEMORY_NAME, STRINGDATA_AREA_SIZE_MAX)
-        if shared_mem_strings and shared_mem_strings[1][1]:
-            print("Falcon BMS started!")
-            return
-        time.sleep(1)
+def falcon_running():
+    shared_mem_strings = read_shared_memory(STRING_SHARED_MEMORY_NAME, STRINGDATA_AREA_SIZE_MAX)
+    if shared_mem_strings and shared_mem_strings[1][1]:
+        return True
 
 def process_keyfile():
     keyfile_path = get_keyfile_path()
@@ -653,12 +649,15 @@ def randomize_cockpit(keyfile_content):
     print("Cockpit randomized!")
 
 def main():
-    wait_until_falcon_running()
-    keyfile_path, keyfile_content = process_keyfile()
+    print("Waiting for Falcon BMS to start.")
+    while not falcon_running():
+        time.sleep(REFRESH_FREQUENCY)
 
+    keyfile_path, keyfile_content = process_keyfile()
     cockpit_randomized = 0
     print("Ready: Move the CMDS knob to STBY to start randomizing")
-    while True:
+
+    while falcon_running():
         fd = read_shared_memory(FLIGHT_DATA_SHARED_MEMORY_NAME, ctypes.sizeof(FlightData), FlightData)
         fd2 = read_shared_memory(FLIGHT_DATA2_SHARED_MEMORY_NAME, ctypes.sizeof(FlightData2), FlightData2)
         ivd = read_shared_memory(INTELLIVIBE_SHARED_MEMORY_NAME, ctypes.sizeof(IntellivibeData), IntellivibeData)
