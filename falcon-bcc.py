@@ -71,7 +71,7 @@ REQUIRED_CALLBACKS = [
     "SimInhibitVMS",
     "SimAntiIceCycle", "SimAntennaSelectCycle",
     "SimINSOff", "SimINSNorm", "SimINSNav", "SimINSInFlt", "SimFCCPower", "SimSMSPower", "SimMFDPower", "SimUFCPower", "SimGPSPower",
-    "SimDLPower", "SimMIDSLVTZero", "SimMIDSLVTOff", "SimMIDSLVTOn", "SimMAPPower",
+    "SimDLPower", "SimMIDSLVTOff", "SimMIDSLVTOn", "SimMAPPower",
 ]
 
 KEYBOARD_SCANCODES = [
