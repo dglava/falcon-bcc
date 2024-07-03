@@ -26,7 +26,6 @@ import struct
 import time
 import random
 import winsound
-import os.path
 from enum import IntEnum
 import mmap
 import itertools
