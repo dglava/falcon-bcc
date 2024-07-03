@@ -377,6 +377,14 @@ class StringIdentifier(IntEnum):
     ThrTerrdatadir = 34
 
 def read_shared_memory(name, size, data_class=None):
+    """Falcon BMS shared memory reader.
+
+    Reads the Falcon BMS shared memory and depending whether data_class
+    is provided, returns the appropriate data from the shared memory.
+    FlightData, FlightData2 and IntellivibeData return the data as a ctypes
+    structure with every avaiable field from the memory.
+    For the Strings, it returns a list of tuples with the identifier and the string.
+    """
     try:
         shm = mmap.mmap(-1, size, name, access=mmap.ACCESS_READ)
         if data_class:
@@ -525,18 +533,30 @@ def send_key(key, modifier):
         ReleaseKey(0x1d)
 
 def notify(message):
+    """Prefix every printed message."""
     print("[Falcon-BCC]: {}".format(message))
 
 def get_keyfile_path():
+    """Get the keyfile path from the shared memory.
+
+    Returns a string with the path to the keyfile."""
     shared_mem_strings = read_shared_memory(STRING_SHARED_MEMORY_NAME, STRINGDATA_AREA_SIZE_MAX)
     notify("Using keyfile: {}".format(shared_mem_strings[1][1]))
     return shared_mem_strings[1][1]
 
 def get_keyfile_content(keyfile_path):
+    """Get the keyfile content from the keyfile path.
+
+    Returns a list of lists with each element holding one line of the keyfile."""
     with open(keyfile_path, "r") as keyfile:
         return [line.strip().split() for line in keyfile if line.strip()]
 
 def get_filtered_keyfile(keyfile_content):
+    """Filters the keyfile content.
+
+    Removes commented out lines and lines which are not callbacks (SimDoNothing)
+    and joins the UI description into a single string.
+    Returns a list of lists with each element holding one line of the keyfile."""
     filtered_keyfile = []
     for line in keyfile_content:
         if line[0].startswith("#") or line[0] == "SimDoNothing":
@@ -550,6 +570,9 @@ def get_filtered_keyfile(keyfile_content):
     return filtered_keyfile
 
 def get_assigned_callbacks(keyfile_content):
+    """Get the assigned callbacks from the keyfile content.
+
+    Returns a list with only the callbacks which are assigned to a key."""
     assigned_callbacks = []
     for line in keyfile_content:
         if line[3].upper() != "0XFFFFFFFF":
@@ -557,6 +580,10 @@ def get_assigned_callbacks(keyfile_content):
     return assigned_callbacks
 
 def get_unassigned_callbacks(assigned_callbacks):
+    """Get callbacks which aren't assigned yet
+
+    Compares the callbacks which have been assigned to the required
+    callbacks and returns a list with callbacks that aren't assigned."""
     unassigned_callbacks = []
     for callback in REQUIRED_CALLBACKS:
         if callback not in assigned_callbacks:
@@ -564,6 +591,11 @@ def get_unassigned_callbacks(assigned_callbacks):
     return unassigned_callbacks
 
 def get_used_keys(keyfile_filtered):
+    """Get assigned keyboard keys
+
+    The assigned keys are the 3rd and 4th element of a line in a keyfile.
+    The first is the keycode and the second one the modifier.
+    Returns a set with a tuple containing the keycode and modifier."""
     used_keys = set()
     for line in keyfile_filtered:
         key = tuple(line[3:5])
@@ -571,6 +603,11 @@ def get_used_keys(keyfile_filtered):
     return used_keys
 
 def get_unused_keys(used_keys):
+    """Get unused keyboard keys
+
+    Checks all the possible keyboard key combinations with the modifiers
+    and removes those already in use in the keyfile.
+    Returns a set with a tuple containing the unused keycode and modifier."""
     # modifiers like ctrl, shift, alt, etc. Remove Alt+Shift ("5") due to
     # it being the default language switcher shortcut (makes the pop appear)
     modifiers = ["0", "1", "2", "3", "4", "6", "7"]
@@ -582,6 +619,10 @@ def get_unused_keys(used_keys):
     return unused_keys
 
 def assign_unused_callbacks(unassigned_callbacks, unused_keys):
+    """Assign unused callbacks to unused keys
+
+    Goes through every unassigned callback and assigns it to an unused key.
+    Returns a list of properly formatted Falcon BMS keyfile lines."""
     # TODO: prefer keys without modifiers
     new_lines = []
     # TODO: modify to keep the sound ID (2nd part of the line, currently always -1)
@@ -594,11 +635,16 @@ def assign_unused_callbacks(unassigned_callbacks, unused_keys):
     return new_lines
 
 def backup_keyfile(original_keyfile_path):
+    """Back the original keyfile up by copying it to a .bak file."""
     backup_keyfile_path = "{}.bak".format(original_keyfile_path)
     shutil.copy2(original_keyfile_path, backup_keyfile_path)
     notify("Original Keyfile backed up to: {}".format(backup_keyfile_path))
 
 def write_new_callbacks_to_file(original_keyfile_content, new_callbacks_content, keyfile_path):
+    """Write the new callbacks to the keyfile.
+
+    It comments out the original line for the new callbacks we assigned.
+    Writes the new callbacks to the keyfile."""
     single_new_callbacks = [x[0] for x in new_callbacks_content]
 
     with open(keyfile_path, "w") as keyfile:
@@ -615,11 +661,21 @@ def write_new_callbacks_to_file(original_keyfile_content, new_callbacks_content,
     notify("All required callbacks added to Keyfile: {}".format(keyfile_path))
 
 def falcon_running():
+    """Return True if Falcon BMS is running
+
+    It checks whether it's running by trying to read the shared memory.
+    """
     shared_mem_strings = read_shared_memory(STRING_SHARED_MEMORY_NAME, STRINGDATA_AREA_SIZE_MAX)
     if shared_mem_strings and shared_mem_strings[1][1]:
         return True
 
 def process_keyfile():
+    """Process the keyfile
+
+    The routine for the keyfile part: gets its path and reads the keyfile, filters
+    only the useful lines out, gets all the assigned and unassigned callbacks and
+    finally writes it to our keyfile if necessary.
+    Returns a string with the path of the used keyfile."""
     keyfile_path = get_keyfile_path()
     keyfile_content = get_keyfile_content(keyfile_path)
     filtered_keyfile = get_filtered_keyfile(keyfile_content)
@@ -636,11 +692,13 @@ def process_keyfile():
     return keyfile_path, keyfile_content
 
 def randomize_cockpit(keyfile_content):
-    # randomizes the cockpit by simply triggering each callback a random
-    # number of times.
-    # switches and dials that can't be cycled (for example the air source)
-    # would always get set to the state that's placed last in the keyfile.
-    # that's why the shuffle is needed to make them random as well.
+    """Randomize the cockpit
+
+    Randomizes the cockpit by simply triggering each callback a random number of times.
+    Switches and dials that can't be cycled (for example the air source) would always
+    get set to the state that's placed last in the keyfile. That's why the shuffle is
+    needed to make them random as well.
+    """
     winsound.PlaySound(BEEP, winsound.SND_LOOP | winsound.SND_ASYNC)
     random.shuffle(keyfile_content)
     # TODO: use cached callbacks from somewhere else, don't go through whole keyfile again
@@ -652,6 +710,13 @@ def randomize_cockpit(keyfile_content):
     notify("Cockpit randomized!")
 
 def main():
+    """Main loop
+
+    It waits for Falcon BMS to start, processes the keyfile, and then enters the main
+    loop where it randomizes the cockpit and listens for the end of the flight.
+    The criteria for an eligible randomization are that we're in 3D, the plane is on
+    the ground, main power is not on, the cockpit isn't already randomized and the CMDS
+    mode is in STDBY (1)."""
     notify("Waiting for Falcon BMS to start")
     while not falcon_running():
         time.sleep(REFRESH_FREQUENCY)
@@ -683,5 +748,6 @@ def main():
             notify("Left 3D, cockpit randomization rearmed")
             cockpit_randomized = 0
         time.sleep(REFRESH_FREQUENCY)
+    notify("Falcon BMS not running. Exiting")
 
 main()
