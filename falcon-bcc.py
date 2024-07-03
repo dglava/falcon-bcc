@@ -681,10 +681,10 @@ def process_keyfile():
     filtered_keyfile = get_filtered_keyfile(keyfile_content)
     assigned_callbacks = get_assigned_callbacks(filtered_keyfile)
     unassigned_callbacks = get_unassigned_callbacks(assigned_callbacks)
-    used_keys = get_used_keys(filtered_keyfile)
-    unused_keys = get_unused_keys(used_keys)
-    new_callbacks_content = assign_unused_callbacks(unassigned_callbacks, unused_keys)
-    if new_callbacks_content:
+    if unassigned_callbacks:
+        used_keys = get_used_keys(filtered_keyfile)
+        unused_keys = get_unused_keys(used_keys)
+        new_callbacks_content = assign_unused_callbacks(unassigned_callbacks, unused_keys)
         backup_keyfile(keyfile_path)
         write_new_callbacks_to_file(keyfile_content, new_callbacks_content, keyfile_path)
     else:
