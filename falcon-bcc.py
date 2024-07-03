@@ -561,12 +561,12 @@ def get_keyfile_content(keyfile_path):
 def get_filtered_keyfile(keyfile_content):
     """Filters the keyfile content.
 
-    Removes commented out lines, lines which are not callbacks (SimDoNothing) and
-    empty lines and joins the UI description into a single string.
+    Removes commented out lines, lines which are not callbacks (SimDoNothing), empty
+    lines and DirectX button assigment lines and joins the UI description into a single string.
     Returns a list of lists with each element holding one line of the keyfile."""
     filtered_keyfile = []
     for line in keyfile_content:
-        if line[0].startswith("#") or line[0] == "SimDoNothing" or line[0] == "\n":
+        if line[0].startswith("#") or line[0] == "SimDoNothing" or line[0] == "\n" or len(line) == 7:
             continue
         else:
             # joins every element after the 8th into a string (UI description)
