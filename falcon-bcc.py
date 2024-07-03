@@ -602,11 +602,10 @@ def get_used_keys(keyfile_filtered):
 
     The assigned keys are the 3rd and 4th element of a line in a keyfile.
     The first is the keycode and the second one the modifier.
-    Returns a set with a tuple containing the keycode and modifier."""
-    used_keys = set()
+    Returns a list of tuples containing the keycode and modifier."""
+    used_keys = []
     for line in keyfile_filtered:
-        key = tuple(line[3:5])
-        used_keys.add(key)
+        used_keys.append((line[3], line[4]))
     return used_keys
 
 def get_unused_keys(used_keys):
@@ -614,32 +613,32 @@ def get_unused_keys(used_keys):
 
     Checks all the possible keyboard key combinations with the modifiers
     and removes those already in use in the keyfile.
-    Returns a set with a tuple containing the unused keycode and modifier."""
-    # modifiers like ctrl, shift, alt, etc. Remove Alt+Shift ("5") due to
-    # it being the default language switcher shortcut (makes the pop appear)
+    Returns a list of tuples containing the unused keycode and modifier."""
+    # Remove Alt+Shift ("5") the default language switcher shortcut (makes the pop appear)
     modifiers = ["0", "1", "2", "3", "4", "6", "7"]
+
     all_possible_keys = itertools.product(KEYBOARD_SCANCODES, modifiers)
-    unused_keys = set(all_possible_keys) - used_keys
-    if len(unused_keys) < len(REQUIRED_CALLBACKS):
-        notify("Warning: not enough unused keys to assign all required callbacks.")
+    unused_keys_set = set(all_possible_keys) - set(used_keys)
+    unused_keys_list = sorted(list(unused_keys_set), key=lambda x: x[1])
+    if len(unused_keys_list) < len(REQUIRED_CALLBACKS):
+        notify("Warning: not enough unused keys to assign all the required callbacks")
         sys.exit(1)
-    return unused_keys
+    return unused_keys_list
 
 def assign_unused_callbacks(unassigned_callbacks, unused_keys):
     """Assign unused callbacks to unused keys
 
     Goes through every unassigned callback and assigns it to an unused key.
     Returns a list of properly formatted Falcon BMS keyfile lines."""
-    # TODO: prefer keys without modifiers
-    new_lines = []
+    new_assigned_lines = []
     # TODO: modify to keep the sound ID (2nd part of the line, currently always -1)
-    callback_template = '{callback} -1 0 {key} {mod} 0 0 1 "GeneratedByFalcon-BCC"'
+    callback_template = '{} -1 0 {} {} 0 0 1 "GeneratedByFalcon-BCC"'
     for cb in unassigned_callbacks:
-        for key, mod in unused_keys:
-            new_lines.append(callback_template.format(callback=cb, key=key, mod=mod).split())
-            unused_keys.remove((key, mod))
-            break
-    return new_lines
+        key, mod = unused_keys.pop(0)
+        new_callback = callback_template.format(cb, key, mod)
+        new_callback_line = new_callback.split()
+        new_assigned_lines.append(new_callback_line)
+    return new_assigned_lines
 
 def backup_keyfile(original_keyfile_path):
     """Back the original keyfile up by copying it to a .bak file."""
