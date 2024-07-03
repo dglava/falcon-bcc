@@ -32,7 +32,6 @@ import mmap
 import itertools
 import shutil
 
-BEEP = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + r"\beep.wav"
 REFRESH_FREQUENCY = 2
 FLIGHT_DATA_SHARED_MEMORY_NAME = "FalconSharedMemoryArea"
 FLIGHT_DATA2_SHARED_MEMORY_NAME = "FalconSharedMemoryArea2"
@@ -708,7 +707,7 @@ def randomize_cockpit(keyfile_content):
     get set to the state that's placed last in the keyfile. That's why the shuffle is
     needed to make them random as well.
     """
-    winsound.PlaySound(BEEP, winsound.SND_LOOP | winsound.SND_ASYNC)
+    winsound.PlaySound("Notification.Proximity", winsound.SND_ALIAS | winsound.SND_LOOP | winsound.SND_ASYNC)
     random.shuffle(keyfile_content)
     # TODO: use cached callbacks from somewhere else, don't go through whole keyfile again
     for line in keyfile_content:
