@@ -21,7 +21,6 @@
 
 import sys
 import ctypes
-import ctypes.wintypes
 import struct
 import time
 import random
