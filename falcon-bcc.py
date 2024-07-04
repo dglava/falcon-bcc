@@ -63,6 +63,7 @@ REQUIRED_CALLBACKS = [
     "SimDriftCO",
     "SimStepHSIMode",
     "SimFuelSwitchTest", "SimFuelSwitchNorm", "SimFuelSwitchResv", "SimFuelSwitchWingInt", "SimFuelSwitchWingExt", "SimFuelSwitchCenterExt", "SimExtFuelTrans",
+    "SimLeftHptPower", "SimRightHptPower", "SimFCRPower", "SimRALTON", "SimRALTSTDBY", "SimRALTOFF",
     "SimHUDScales", "SimScalesVVVAH", "SimHUDFPM", "SimHUDDED", "SimReticleSwitch", "SimHUDVelocity", "SimHUDRadar", "SimHUDBrightness",
     "SimInstrumentLight", "SimDedBrightness", "SimInteriorLight",
     "SimAirSourceOff", "SimAirSourceNorm", "SimAirSourceDump", "SimAirSourceRam",
