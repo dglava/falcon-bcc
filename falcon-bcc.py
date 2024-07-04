@@ -120,7 +120,6 @@ KEYBOARD_SCANCODES = [
     "0X42", #F8
     "0X43", #F9
     "0X44", #F10
-    "0X46", #Scroll Lock
     "0X47", #Keypad 7
     "0X48", #Keypad 8
     "0X49", #Keypad 9
