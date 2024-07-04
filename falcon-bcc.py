@@ -375,7 +375,6 @@ def read_shared_memory(shared_mem_class):
                 str_length = struct.unpack('I', shm.read(4))[0]
                 str_data = shm.read(str_length + 1).decode('utf-8').rstrip('\x00')
                 strings_list.append(str_data)
-            print(strings_list)
             return strings_list
     except Exception as e:
         notify("Error reading shared memory '{name}': {e}".format(shared_mem, e))
