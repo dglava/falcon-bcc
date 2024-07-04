@@ -19,19 +19,17 @@
 # Contains source code licensed under different licenses; marked appropriately
 # with comments
 
-import sys
 import ctypes
 import struct
+import mmap
+import sys
 import time
 import random
 import winsound
-from enum import IntEnum
-import mmap
 import itertools
 import shutil
 
 REFRESH_FREQUENCY = 2
-
 REQUIRED_CALLBACKS = [
     "SimProbeHeatOn", "SimProbeHeatOff", "SimProbeHeatTest",
     "SimDigitalBUP", "SimAltFlaps", "SimManualFlyup", "SimLEFLockSwitch",
@@ -151,6 +149,7 @@ KEYBOARD_SCANCODES = [
 ]
 
 class FlightData(ctypes.Structure):
+    name = "FalconSharedMemoryArea"
     _fields_ = [
         ("x", ctypes.c_float),
         ("y", ctypes.c_float),
@@ -236,6 +235,7 @@ class FlightData(ctypes.Structure):
         ]
 
 class FlightData2(ctypes.Structure):
+    name = "FalconSharedMemoryArea2"
     _fields_ = [
         ("nozzlePos2", ctypes.c_float),
         ("rpm2", ctypes.c_float),
@@ -306,6 +306,7 @@ class FlightData2(ctypes.Structure):
         ]
 
 class IntellivibeData(ctypes.Structure):
+    name = "FalconIntellivibeSharedMemoryArea"
     _fields_ = [
         ("AAMissileFired", ctypes.c_ubyte),
         ("AGMissileFired", ctypes.c_ubyte),
@@ -333,51 +334,86 @@ class IntellivibeData(ctypes.Structure):
         ]
 
 class Strings():
-    pass
+    name = "FalconSharedMemoryAreaString"
+    area_size_max = 1024 * 1024
+    id = [
+        "BmsExe",
+        "KeyFile",
+        "BmsBasedir",
+        "BmsBinDirectory",
+        "BmsDataDirectory",
+        "BmsUIArtDirectory",
+        "BmsUserDirectory",
+        "BmsAcmiDirectory",
+        "BmsBriefingsDirectory",
+        "BmsConfigDirectory",
+        "BmsLogsDirectory",
+        "BmsPatchDirectory",
+        "BmsPictureDirectory",
+        "ThrName",
+        "ThrCampaigndir",
+        "ThrTerraindir",
+        "ThrArtdir",
+        "ThrMoviedir",
+        "ThrUisounddir",
+        "ThrObjectdir",
+        "Thr3ddatadir",
+        "ThrMisctexdir",
+        "ThrSounddir",
+        "ThrTacrefdir",
+        "ThrSplashdir",
+        "ThrCockpitdir",
+        "ThrSimdatadir",
+        "ThrSubtitlesdir",
+        "ThrTacrefpicsdir",
+        "AcName",
+        "AcNCTR",
+        "ButtonsFile",
+        "CockpitFile",
+        "NavPoint",
+        "ThrTerrdatadir"
+    ]
 
-def read_shared_memory(shared_mem_class):
-    """Falcon BMS shared memory reader.
+    def add(self, id, value):
+        setattr(self, id, value)
 
-    There are 2 different routines: one for the strings (info about
-    various directories) and one for all other data (FlightData, FlightData2,
-    IntellivibeData). The latter ones are returned as a ctypes structure
-    with every available field exposed by the shared memory.
-    For the former one, the Strings, it returns a list with every directory.
+def read_shared_memory(structure):
+    """Reads the Falcon BMS shared memory
+
+    Returns data from a shared memory area after passing the appropriate
+    ctype structure (FlightData, FlightData2 or IntellivibeData).
     """
-    shared_mem = shared_mem_class.__name__
-    shared_mem_names = {
-        "FlightData": "FalconSharedMemoryArea",
-        "FlightData2": "FalconSharedMemoryArea2",
-        "IntellivibeData": "FalconIntellivibeSharedMemoryArea",
-        "Strings": "FalconSharedMemoryAreaString"
-    }
-    shared_mem_sizes = {
-        "FlightData": ctypes.sizeof(FlightData),
-        "FlightData2": ctypes.sizeof(FlightData2),
-        "IntellivibeData": ctypes.sizeof(IntellivibeData),
-        "Strings": 1024 * 1024
-    }
-
     try:
-        shm = mmap.mmap(-1, shared_mem_sizes[shared_mem], shared_mem_names[shared_mem], access=mmap.ACCESS_READ)
-        if shared_mem != "Strings":
-            buffer = shm.read(shared_mem_sizes[shared_mem])
-            data = shared_mem_class.from_buffer_copy(buffer)
-            shm.close()
-            return data
-        else:
-            version_num = struct.unpack('I', shm.read(4))[0]
-            num_strings = struct.unpack('I', shm.read(4))[0]
-            data_size = struct.unpack('I', shm.read(4))[0]
-            strings_list = []
-            for _ in range(num_strings):
-                str_id = struct.unpack('I', shm.read(4))[0]
-                str_length = struct.unpack('I', shm.read(4))[0]
-                str_data = shm.read(str_length + 1).decode('utf-8').rstrip('\x00')
-                strings_list.append(str_data)
-            return strings_list
+        sm = mmap.mmap(-1, ctypes.sizeof(structure), structure.name, access=mmap.ACCESS_READ)
+        buffer = sm.read(ctypes.sizeof(structure))
+        data = structure.from_buffer_copy(buffer)
+        sm.close()
+        return data
     except Exception as e:
-        notify("Error reading shared memory '{name}': {e}".format(shared_mem, e))
+        print("Error reading shared memory '{}': {}".format(structure.name, e))
+        return None
+
+def read_shared_memory_strings():
+    """Reads the string area of the Falcon BMS shared memory
+
+    Returns an instance of the Strings class holding all the available strings
+    as object attributes.
+    """
+    try:
+        sm = mmap.mmap(-1, Strings.area_size_max, Strings.name, access=mmap.ACCESS_READ)
+        version_num = struct.unpack('I', sm.read(4))[0]
+        num_strings = struct.unpack('I', sm.read(4))[0]
+        data_size = struct.unpack('I', sm.read(4))[0]
+        instance = Strings()
+        for id in Strings.id:
+            str_id = struct.unpack('I', sm.read(4))[0]
+            str_length = struct.unpack('I', sm.read(4))[0]
+            str_data = sm.read(str_length + 1).decode('utf-8').rstrip('\x00')
+            instance.add(id, str_data)
+        sm.close()
+        return instance
+    except Exception as e:
+        print("Error reading shared memory '{}': {}".format(Strings.name, e))
         return None
 
 # generating keyboard events; see https://stackoverflow.com/a/23468236
@@ -511,9 +547,9 @@ def get_keyfile_path():
     """Get the keyfile path from the shared memory.
 
     Returns a string with the path to the keyfile."""
-    shared_mem_strings = read_shared_memory(Strings)
-    notify("Using keyfile: {}".format(shared_mem_strings[1]))
-    return shared_mem_strings[1]
+    strings = read_shared_memory_strings()
+    notify("Using keyfile: {}".format(strings.KeyFile))
+    return strings.KeyFile
 
 def get_keyfile_content(keyfile_path):
     """Get the keyfile content from the keyfile path.
@@ -533,8 +569,9 @@ def get_filtered_keyfile(keyfile_content):
     """Filters the keyfile content.
 
     Removes commented out lines, lines which are not callbacks (SimDoNothing), empty
-    lines and DirectX button assigment lines and joins the UI description into a single string.
-    Returns a list of lists with each element holding one line of the keyfile."""
+    lines and DirectX button assigment lines (len == 7) and joins the UI description
+    into a single string. Returns a list of lists with each element holding one line
+    of the keyfile."""
     filtered_keyfile = []
     for line in keyfile_content:
         if line[0].startswith("#") or line[0] == "SimDoNothing" or line[0] == "\n" or len(line) == 7:
@@ -645,8 +682,8 @@ def falcon_running():
 
     It checks whether it's running by trying to read the shared memory.
     """
-    shared_mem_strings = read_shared_memory(Strings)
-    if shared_mem_strings and shared_mem_strings[1]:
+    strings = read_shared_memory_strings()
+    if strings and strings.KeyFile:
         return True
 
 def process_keyfile():
@@ -690,7 +727,7 @@ def randomize_cockpit(keyfile_content):
     notify("Cockpit randomized!")
 
 def main():
-    """Main function
+    """Runs Falcon-BCC
 
     It waits for Falcon BMS to start, processes the keyfile, and then enters the main
     loop where it randomizes the cockpit and listens for the end of the flight.
@@ -706,21 +743,21 @@ def main():
     notify("Ready: Move the CMDS knob to STBY to start randomizing")
 
     while falcon_running():
-        fd = read_shared_memory(FlightData)
-        fd2 = read_shared_memory(FlightData2)
-        ivd = read_shared_memory(IntellivibeData)
-        strd = read_shared_memory(Strings)
+        flightdata = read_shared_memory(FlightData)
+        flightdata2 = read_shared_memory(FlightData2)
+        intellivibedata = read_shared_memory(IntellivibeData)
+        strings = read_shared_memory_strings()
 
-        if strd[1] != keyfile_path:
+        if strings.KeyFile != keyfile_path:
             notify("\tKeyfile changed, reprocessing...")
             keyfile_path, keyfile_content = process_keyfile()
             notify("Ready: Move the CMDS knob to STBY to start randomizing")
 
-        in_3d = ivd.In3D
-        on_ground = ivd.IsOnGround
-        end_flight = ivd.IsEndFlight
-        main_power = fd.MainPower
-        cmds_mode = fd2.cmdsMode
+        in_3d = intellivibedata.In3D
+        on_ground = intellivibedata.IsOnGround
+        end_flight = intellivibedata.IsEndFlight
+        main_power = flightdata.MainPower
+        cmds_mode = flightdata2.cmdsMode
         if in_3d and on_ground and not main_power and not cockpit_randomized and cmds_mode == 1:
             randomize_cockpit(keyfile_content)
             cockpit_randomized = 1
