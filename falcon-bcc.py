@@ -32,11 +32,6 @@ import itertools
 import shutil
 
 REFRESH_FREQUENCY = 2
-FLIGHT_DATA_SHARED_MEMORY_NAME = "FalconSharedMemoryArea"
-FLIGHT_DATA2_SHARED_MEMORY_NAME = "FalconSharedMemoryArea2"
-INTELLIVIBE_SHARED_MEMORY_NAME = "FalconIntellivibeSharedMemoryArea"
-STRING_SHARED_MEMORY_NAME = "FalconSharedMemoryAreaString"
-STRINGDATA_AREA_SIZE_MAX = 1024 * 1024
 
 REQUIRED_CALLBACKS = [
     "SimProbeHeatOn", "SimProbeHeatOff", "SimProbeHeatTest",
@@ -338,57 +333,37 @@ class IntellivibeData(ctypes.Structure):
         ("whendamage", ctypes.c_uint),
         ]
 
-class StringIdentifier(IntEnum):
-    BmsExe = 0
-    KeyFile = 1
-    BmsBasedir = 2
-    BmsBinDirectory = 3
-    BmsDataDirectory = 4
-    BmsUIArtDirectory = 5
-    BmsUserDirectory = 6
-    BmsAcmiDirectory = 7
-    BmsBriefingsDirectory = 8
-    BmsConfigDirectory = 9
-    BmsLogsDirectory = 10
-    BmsPatchDirectory = 11
-    BmsPictureDirectory = 12
-    ThrName = 13
-    ThrCampaigndir = 14
-    ThrTerraindir = 15
-    ThrArtdir = 16
-    ThrMoviedir = 17
-    ThrUisounddir = 18
-    ThrObjectdir = 19
-    Thr3ddatadir = 20
-    ThrMisctexdir = 21
-    ThrSounddir = 22
-    ThrTacrefdir = 23
-    ThrSplashdir = 24
-    ThrCockpitdir = 25
-    ThrSimdatadir = 26
-    ThrSubtitlesdir = 27
-    ThrTacrefpicsdir = 28
-    AcName = 29
-    AcNCTR = 30
-    ButtonsFile = 31
-    CockpitFile = 32
-    NavPoint = 33
-    ThrTerrdatadir = 34
+class Strings():
+    pass
 
-def read_shared_memory(name, size, data_class=None):
+def read_shared_memory(shared_mem_class):
     """Falcon BMS shared memory reader.
 
-    Reads the Falcon BMS shared memory and depending whether data_class
-    is provided, returns the appropriate data from the shared memory.
-    FlightData, FlightData2 and IntellivibeData return the data as a ctypes
-    structure with every avaiable field from the memory.
-    For the Strings, it returns a list of tuples with the identifier and the string.
+    There are 2 different routines: one for the strings (info about
+    various directories) and one for all other data (FlightData, FlightData2,
+    IntellivibeData). The latter ones are returned as a ctypes structure
+    with every available field exposed by the shared memory.
+    For the former one, the Strings, it returns a list with every directory.
     """
+    shared_mem = shared_mem_class.__name__
+    shared_mem_names = {
+        "FlightData": "FalconSharedMemoryArea",
+        "FlightData2": "FalconSharedMemoryArea2",
+        "IntellivibeData": "FalconIntellivibeSharedMemoryArea",
+        "Strings": "FalconSharedMemoryAreaString"
+    }
+    shared_mem_sizes = {
+        "FlightData": ctypes.sizeof(FlightData),
+        "FlightData2": ctypes.sizeof(FlightData2),
+        "IntellivibeData": ctypes.sizeof(IntellivibeData),
+        "Strings": 1024 * 1024
+    }
+
     try:
-        shm = mmap.mmap(-1, size, name, access=mmap.ACCESS_READ)
-        if data_class:
-            buffer = shm.read(size)
-            data = data_class.from_buffer_copy(buffer)
+        shm = mmap.mmap(-1, shared_mem_sizes[shared_mem], shared_mem_names[shared_mem], access=mmap.ACCESS_READ)
+        if shared_mem != "Strings":
+            buffer = shm.read(shared_mem_sizes[shared_mem])
+            data = shared_mem_class.from_buffer_copy(buffer)
             shm.close()
             return data
         else:
@@ -400,12 +375,11 @@ def read_shared_memory(name, size, data_class=None):
                 str_id = struct.unpack('I', shm.read(4))[0]
                 str_length = struct.unpack('I', shm.read(4))[0]
                 str_data = shm.read(str_length + 1).decode('utf-8').rstrip('\x00')
-
-                identifier = StringIdentifier(str_id).name
-                strings_list.append((identifier, str_data))
+                strings_list.append(str_data)
+            print(strings_list)
             return strings_list
     except Exception as e:
-        notify("Error reading shared memory '{name}': {e}".format(name, e))
+        notify("Error reading shared memory '{name}': {e}".format(shared_mem, e))
         return None
 
 # generating keyboard events; see https://stackoverflow.com/a/23468236
@@ -539,9 +513,9 @@ def get_keyfile_path():
     """Get the keyfile path from the shared memory.
 
     Returns a string with the path to the keyfile."""
-    shared_mem_strings = read_shared_memory(STRING_SHARED_MEMORY_NAME, STRINGDATA_AREA_SIZE_MAX)
-    notify("Using keyfile: {}".format(shared_mem_strings[1][1]))
-    return shared_mem_strings[1][1]
+    shared_mem_strings = read_shared_memory(Strings)
+    notify("Using keyfile: {}".format(shared_mem_strings[1]))
+    return shared_mem_strings[1]
 
 def get_keyfile_content(keyfile_path):
     """Get the keyfile content from the keyfile path.
@@ -673,8 +647,8 @@ def falcon_running():
 
     It checks whether it's running by trying to read the shared memory.
     """
-    shared_mem_strings = read_shared_memory(STRING_SHARED_MEMORY_NAME, STRINGDATA_AREA_SIZE_MAX)
-    if shared_mem_strings and shared_mem_strings[1][1]:
+    shared_mem_strings = read_shared_memory(Strings)
+    if shared_mem_strings and shared_mem_strings[1]:
         return True
 
 def process_keyfile():
@@ -718,7 +692,7 @@ def randomize_cockpit(keyfile_content):
     notify("Cockpit randomized!")
 
 def main():
-    """Main loop
+    """Main function
 
     It waits for Falcon BMS to start, processes the keyfile, and then enters the main
     loop where it randomizes the cockpit and listens for the end of the flight.
@@ -734,12 +708,12 @@ def main():
     notify("Ready: Move the CMDS knob to STBY to start randomizing")
 
     while falcon_running():
-        fd = read_shared_memory(FLIGHT_DATA_SHARED_MEMORY_NAME, ctypes.sizeof(FlightData), FlightData)
-        fd2 = read_shared_memory(FLIGHT_DATA2_SHARED_MEMORY_NAME, ctypes.sizeof(FlightData2), FlightData2)
-        ivd = read_shared_memory(INTELLIVIBE_SHARED_MEMORY_NAME, ctypes.sizeof(IntellivibeData), IntellivibeData)
-        strd = read_shared_memory(STRING_SHARED_MEMORY_NAME, STRINGDATA_AREA_SIZE_MAX)
+        fd = read_shared_memory(FlightData)
+        fd2 = read_shared_memory(FlightData2)
+        ivd = read_shared_memory(IntellivibeData)
+        strd = read_shared_memory(Strings)
 
-        if strd[1][1] != keyfile_path:
+        if strd[1] != keyfile_path:
             notify("\tKeyfile changed, reprocessing...")
             keyfile_path, keyfile_content = process_keyfile()
             notify("Ready: Move the CMDS knob to STBY to start randomizing")
