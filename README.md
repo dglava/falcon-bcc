@@ -1,6 +1,6 @@
 # Falcon-BCC
 
-Falcon-BCC is an utility for Falcon BMS which randomizes switches in
+Falcon-BCC is an utility for Falcon BMS 4.37 which randomizes switches in
 the F16 cockpit. It's supposed to make cold-starts a bit more interesting,
 by requiring more attention and not relying on the switches being always
 in the same state. It's probably unrealistic, since the plane would be
@@ -19,7 +19,7 @@ panel knob to STBY won't have any effect. A sound effect is played
 during the randomizing for better feedback when it's done.
 
 ### Dependencies
-Just the Python standard library.
+Just the Python standard library. Works only on Falcon BMS 4.37.
 
 ### Tip for Usage
 For ultimate convenience, as with my other [utility which displays briefings on a smartphone](https://github.com/dglava/falcon-briefing),
